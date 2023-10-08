@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Login Page | theuicode.com</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+<!--    <link rel="stylesheet" href="../static/auth.css">-->
+</head>
+
+<body>
+    <div class="container">
+        <div class="design">
+            <div class="pill-1 rotate-45"></div>
+            <div class="pill-2 rotate-45"></div>
+            <div class="pill-3 rotate-45"></div>
+            <div class="pill-4 rotate-45"></div>
+        </div>
+        <div class="main-content">
+
+            <div id="login" class="tab-content" >
+                <h3 class="title">Sign In</h3>
+                <form class="form-login" action="/iot" method="POST">
+                    <div class="text-input js-text-input">
+                        <i class="ri-user-fill"></i>
+                        <input type="text" name="user" placeholder="Username" required>
+                    </div>
+                    <div class="text-input js-text-input">
+                        <i class="ri-lock-fill"></i>
+                        <input type="password" name="passwd" placeholder="Password" required>
+                    </div>
+                    {% with message = get_flashed_messages() %}
+                        {% if message %}
+                            <p style="color: red; font-weight: bold;">{{ message[0] }}</p>
+                        {% endif %}
+                    {% endwith %}
+                    <button type="submit" class="login-btn">LOGIN</button>
+                </form>
+                <div class="tab-link forgot" onclick="openTab(event, 'forgot')" >Forgot Username/Password?</div>
+                <div class="tab-link create" onclick="openTab(event, 'register')" >Create Your Account <i class="ri-add-circle-fill"></i> </div>
+            </div>
+
+            <div id="register" class="tab-content">
+                <h3 class="title">Sign Up</h3>
+                <form class="form-login">
+                    <div class="text-input js-text-input">
+                        <i class="ri-user-fill"></i>
+                        <input type="text" placeholder="Username" required>
+                    </div>
+                    <div class="text-input js-text-input">
+                        <i class="ri-lock-fill"></i>
+                        <input type="password" placeholder="Password" required>
+                    </div>
+                    <div class="text-input js-text-input">
+                        <i class="ri-lock-fill"></i>
+                        <input type="password" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="login-btn">LOGIN</button>
+                </form>
+                <div class="tab-link create"  onclick="openTab(event, 'login')" >Login Your Account <i class="ri-arrow-right-fill"></i> </div>
+                </div>
+
+            <div id="forgot" class="tab-content">
+                <h3 class="title">Forgot</h3>
+                <form class="form-login">
+                    <div class="text-input js-text-input">
+                        <i class="ri-user-fill"></i>
+                        <input type="text" placeholder="Username" required>
+                    </div>
+                    <button type="submit" class="login-btn">Send</button>
+                </form>
+                <div class="tab-link create"  onclick="openTab(event, 'login')" >  <i class="ri-arrow-left-fill"></i> Login Your Account </div>
+
+            </div>
+
+            </div>
+    </div>
+
+<!--    <script src="../static/auth.js"></script>-->
+    <script src="{{ url_for('static', filename='auth.js') }}"></script>
+</body>
+
+</html>

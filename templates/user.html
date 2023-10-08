@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Iot User</title>
+        <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', filename='user.css') }}">
+<!--        <link rel="stylesheet" href="../static/user.css">-->
+    </head>
+
+    <body>
+
+        <div class="container" >
+            {% if username %}
+            <h1>Xin chào {{ username }}, Test camera</h1>
+            <nav>
+            <button id="toggleCamera" onclick="toggleCamera()">Start Streaming</button>
+
+            </nav>
+            <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
+            <canvas id="processedVideo"  class="video" ></canvas>
+            {% else %}
+                <p>User not authenticated</p>
+            {% endif %}
+
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+
+        <script src="{{ url_for('static', filename='user.js') }}"></script>
+<!--        <script src="../static/user.js"></script>-->
+    </body>
+
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Streaming</title>
+</head>
+<body>
+    <h1>Video Streaming</h1>
+    <button id="toggleCamera" onclick="toggleCamera()">Start Streaming</button>
+    <video id="video" width="640" height="480"  style="transform: scaleX(-1);" autoplay></video>
+    <canvas id="processedVideo"  width="640" height="480"></canvas>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        const videoElement = document.getElementById('video');
+        var processedVideoElement = document.getElementById('processedVideo');
+        var stream = null;
+        var cameraOn = false;
+
+        let sendFrame;
+
+        async function toggleCamera() {
+            if (!cameraOn) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    videoElement.srcObject = stream;
+                    cameraOn = true;
+                    document.getElementById('toggleCamera').textContent = 'Stop Streaming';
+                    sendFrame = setInterval( function() {
+                        var canvas = document.createElement('canvas');
+                        var context = canvas.getContext('2d');
+                        canvas.width = videoElement.width;
+                        canvas.height = videoElement.height;
+
+                        context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                        var frameData = canvas.toDataURL('image/jpeg', 0.7);
+                        socket.emit('video_frame', frameData);
+                    } , 10);
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                }
+            } else {
+                if (stream) {
+                    stream.getTracks().forEach(function (track) {
+                        track.stop();
+                    });
+                    videoElement.srcObject = null;
+                }
+                cameraOn = false;
+                document.getElementById('toggleCamera').textContent = 'Start Streaming';
+                clearInterval(sendFrame);
+            }
+        }
+
+        socket.on('video_frame', function (frame_data) {
+<!--            receivedVideoElement.src ='data:image/jpeg;base64,' + frame_data;-->
+            const processedCtx = processedVideoElement.getContext('2d');
+            const processedImage = new Image();
+            processedImage.src =  frame_data;
+            processedImage.onload = () => {
+                processedCtx.drawImage(processedImage, 0, 0, processedVideoElement.width, processedVideoElement.height);
+            };
+        });
+    </script>
+</body>
+</html>
