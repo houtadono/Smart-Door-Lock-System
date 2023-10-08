@@ -29,48 +29,77 @@ def index():
 @socketio.on('video_frame')
 def video_frame(frame_data):
     processed_frame_base64 = frame_data.split(',')[1]
+    frame_data = None
     # bbox = form.get('detections')
-    # try:
+    try:
         # Decode the frame data
-    frame_bytes = base64.b64decode(processed_frame_base64)
-    frame_np = np.frombuffer(frame_bytes, dtype=np.uint8)
-    frame = cv2.imdecode(frame_np, cv2.IMREAD_COLOR)
-    # frame = cv2.resize(frame, (640, 480))
-    frame = cv2.flip(frame, 1)
-    frame, faces = face_detection.findFaces(frame, False)
-    if faces:
-        for face in faces:
-            x, y, w, h = face['bbox']
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        frame_bytes = base64.b64decode(processed_frame_base64)
+        processed_frame_base64 = None
+        frame_np = np.frombuffer(frame_bytes, dtype=np.uint8)
+        frame_bytes = None
+        frame = cv2.imdecode(frame_np, cv2.IMREAD_COLOR)
+        frame_np = None
+        # frame = cv2.resize(frame, (640, 480))
+        frame = cv2.flip(frame, 1)
+        frame, faces = face_detection.findFaces(frame, False)
+        if faces:
+            for face in faces:
+                x, y, w, h = face['bbox']
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-    _, processed_frame_data = cv2.imencode('.jpg', frame)
-    processed_frame_base64 = base64.b64encode(processed_frame_data).decode()
-    # except Exception:
-    #     print(Exception)
-    #     pass
+        _, processed_frame_data = cv2.imencode('.jpg', frame)
+        frame = None
+        processed_frame_base64 = base64.b64encode(processed_frame_data).decode()
+    except Exception:
+        pass
 
     result = 'data:image/jpeg;base64,' + processed_frame_base64
     emit('video_frame', result, broadcast=False)
 
+@app.route('/iot/process_frame', methods=['POST'])
+def process_frame():
+    # Get the base64-encoded frame from the client
+    data = request.get_json()
+    frame_data = data.get('frameData').split(',')[1]
+    # Decode the frame data
+    frame_bytes = base64.b64decode(frame_data)
+    frame_np = np.frombuffer(frame_bytes, dtype=np.uint8)
+    frame = cv2.imdecode(frame_np, cv2.IMREAD_COLOR)
+    processed_frame = cv2.flip(frame, 1)
+
+    processed_frame, faces = face_detection.findFaces(processed_frame, True)
+    if faces:
+        for face in faces:
+            x, y, w, h = face['bbox']
+            cv2.rectangle(processed_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    _, processed_frame_data = cv2.imencode('.jpg', processed_frame)
+    processed_frame_base64 = base64.b64encode(processed_frame_data).decode()
+
+    return jsonify({'processed_frame': processed_frame_base64})
+
+
 @app.route('/iot', methods=['POST', 'GET'])
 def showPageSign():
     if request.method == 'GET':
+        if 'user' in session:
+            return render_template('user.html', username=session.get('user'))
         return render_template('auth.html')
     else:
-        if check():
+        if check(request.form):
             session["user"] = request.form['user']
             return render_template('user.html', username = session.get('user'))
         else:
             flash('Login failed')
             return redirect(url_for('showPageSign'))
 
-def check():
-    return 1
+def check(form):
+    return 1 if form['user'] == 'abc' and form['passwd'] == '123'else 0
 
 @app.route('/iot/logout', methods=['GET'])
 def logout():
     session.pop("user",None)
-    return redirect(url_for('iot'))
+    return redirect(url_for('showPageSign'))
 
 
 if __name__ == '__main__':

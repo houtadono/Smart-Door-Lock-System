@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 from face_detection import  FaceDetection
 
-
 class FaceRecognition:
     def __init__(self):
         self.face_detection = FaceDetection()

@@ -22,16 +22,40 @@ async function toggleCamera() {
             videoElement.srcObject = stream;
             cameraOn = true;
             document.getElementById('toggleCamera').textContent = 'Stop Streaming';
-            sendFrame = setInterval( function() {
+//            sendFrame = setInterval( function() {
+//                var canvas = document.createElement('canvas');
+//                var context = canvas.getContext('2d');
+//                canvas.width = videoElement.clientWidth;
+//                canvas.height = videoElement.clientHeight;
+//                context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+//                var frameData = canvas.toDataURL('image/jpeg');
+//                socket.emit('video_frame', frameData);
+//            } , 100);
+            sendFrame = setInterval(function() {
                 var canvas = document.createElement('canvas');
                 var context = canvas.getContext('2d');
                 canvas.width = videoElement.clientWidth;
                 canvas.height = videoElement.clientHeight;
-
                 context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                 var frameData = canvas.toDataURL('image/jpeg', 0.7);
-                socket.emit('video_frame', frameData);
-            } , 1);
+                fetch('/iot/process_frame', {
+                        method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ frameData: frameData }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        const processedCtx = processedVideo.getContext('2d');
+                        const processedImage = new Image();
+                        processedImage.src = 'data:image/jpeg;base64,' + data.processed_frame;
+                        processedImage.onload = () => {
+                            processedCtx.drawImage(processedImage, 0, 0, processedVideoElement.width, processedVideoElement.height);
+                        };
+                    })
+            },100);
+
         } catch (error) {
             console.error('Error accessing camera:', error);
         }
@@ -52,7 +76,6 @@ async function toggleCamera() {
 }
 
 socket.on('video_frame', function (frame_data) {
-<!--            receivedVideoElement.src ='data:image/jpeg;base64,' + frame_data;-->
     const processedCtx = processedVideoElement.getContext('2d');
     const processedImage = new Image();
     processedImage.src =  frame_data;
@@ -60,3 +83,7 @@ socket.on('video_frame', function (frame_data) {
         processedCtx.drawImage(processedImage, 0, 0, processedVideoElement.width, processedVideoElement.height);
     };
 });
+
+function logout() {
+    window.location.href = '/iot/logout';
+};
