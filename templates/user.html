@@ -22,10 +22,12 @@
             </nav>
             <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
             <canvas id="processedVideo"  class="video" ></canvas>
-            {% else %}
-                <p>User not authenticated</p>
-            {% endif %}
 
+            <p id="message" class="message"></p>
+
+            {% else %}
+                <p style="padding:10px; font-size:30px ">User not authenticated, please verify <a style="color:gray;" href="/iot">here</a> </p>
+            {% endif %}
         </div>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>

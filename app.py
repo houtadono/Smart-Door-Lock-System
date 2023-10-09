@@ -8,7 +8,7 @@ from face_detection import FaceDetection
 
 app = Flask(__name__,static_folder='static', template_folder='templates')
 app.secret_key = 'iot'
-app.permanent_session_lifetime = timedelta(minutes=1)
+app.permanent_session_lifetime = timedelta(minutes=0.5)
 
 app.config['CORS_HEADERS'] = 'Content-Type'
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -68,14 +68,18 @@ def process_frame():
     processed_frame = cv2.flip(frame, 1)
 
     processed_frame, faces = face_detection.findFaces(processed_frame, True)
+    conf = None
     if faces:
-        for face in faces:
-            x, y, w, h = face['bbox']
-            cv2.rectangle(processed_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        face = faces[0]
+        conf = int(face['score'][0])
+        # emit('messages', f"Confidence: {conf}", broadcast=False)
+
+        # for face in faces:
+        x, y, w, h = face['bbox']
+        cv2.rectangle(processed_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
     _, processed_frame_data = cv2.imencode('.jpg', processed_frame)
     processed_frame_base64 = base64.b64encode(processed_frame_data).decode()
-
     return jsonify({'processed_frame': processed_frame_base64})
 
 

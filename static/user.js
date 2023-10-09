@@ -1,11 +1,14 @@
 
 
 var socket = io.connect('http://127.0.0.1:5000');
+socket.addEventListener('open', (event) => {
+    console.log('Connected to WebSocket');
+});
 
 var videoElement = document.getElementById('video');
 var processedVideoElement = document.getElementById('processedVideo');
 var bothVideo = document.querySelectorAll('.video');
-
+var mess = document.getElementById('message');
 
 var stream = null;
 var cameraOn = false;
@@ -19,6 +22,7 @@ async function toggleCamera() {
             for(let v of bothVideo){
                 v.style.display = "inline-block";
             }
+            mess.style.display = "block";
             videoElement.srcObject = stream;
             cameraOn = true;
             document.getElementById('toggleCamera').textContent = 'Stop Streaming';
@@ -72,6 +76,7 @@ async function toggleCamera() {
         for(let v of bothVideo){
             v.style.display = "none";
         }
+        mess.style.display = "none";
     }
 }
 
@@ -82,6 +87,10 @@ socket.on('video_frame', function (frame_data) {
     processedImage.onload = () => {
         processedCtx.drawImage(processedImage, 0, 0, processedVideoElement.width, processedVideoElement.height);
     };
+});
+
+socket.on('messages', function (data) {
+    mess.innerHTML = data;
 });
 
 function logout() {

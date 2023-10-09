@@ -23,6 +23,12 @@ body {
     margin: 0 auto;
 }
 
+button {
+    font-size:20px;
+    padding: 5px;
+    border-radius: 10px;
+}
+
 .video {
     display: none;
     width: 48%;
@@ -30,4 +36,7 @@ body {
     border: 2px solid blue;
 }
 
-
+.message {
+    display: none;
+    color: #cd6ee3;
+}
