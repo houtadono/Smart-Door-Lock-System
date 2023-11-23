@@ -1,11 +1,13 @@
 
+socket.emit('request_lock_status');
 
 var videoElement = document.getElementById('video');
 var processedVideoElement = document.getElementById('processedVideo');
 var bothVideo = document.querySelectorAll('.video');
-var mess = document.getElementById('message');
+var lock_status = document.getElementById('lock-status');
 var timerElement = document.getElementById('timer');
-
+var lock = document.getElementById('lock');
+var lock_top = document.getElementById('lock-top');
 var stream = null;
 var cameraOn = false;
 
@@ -18,13 +20,13 @@ async function toggleCamera() {
             for(let v of bothVideo){
                 v.style.display = "inline-block";
             }
-            mess.style.display = "block";
             timerElement.style.display = "block";
 
             videoElement.srcObject = stream;
             cameraOn = true;
             document.getElementById('toggleCamera').textContent = 'Stop Streaming';
             var elapsedTime = 0;  // Biến để theo dõi thời gian chạy camera
+            lock.classList.toggle('no-animation');
             sendFrame = setInterval( function() {
                 // Tăng thời gian chạy
                 elapsedTime += 100;
@@ -44,16 +46,16 @@ async function toggleCamera() {
                 socket.emit('video_frame', frameData);
 
                  // Kiểm tra sau 30 giây
-                if (elapsedTime === 10000) {
+                if (elapsedTime === 3000) {
                     console.log('Thông báo sau 10 giây');
                 }
-                if (elapsedTime === 15000) {
+                if (elapsedTime === 5000) {
                     console.log('Dừng sau 1/4 phút');
                     toast({
                         type: "error",
                         title: 'Thất bại!',
                         message: 'Xác thực không thành công! Vui lòng thử lại...',
-                        duration: '4000'
+                        duration: 3000
                     })
                     toggleCamera();
                 }
@@ -63,6 +65,7 @@ async function toggleCamera() {
             console.error('Error accessing camera:', error);
         }
     } else {
+        open_lock();
         if (stream) {
             stream.getTracks().forEach(function (track) {
                 track.stop();
@@ -75,8 +78,8 @@ async function toggleCamera() {
         for(let v of bothVideo){
             v.style.display = "none";
         }
-        mess.style.display = "none";
         timerElement.style.display = "none";
+        lock.classList.toggle('no-animation');
     }
 }
 
@@ -89,34 +92,22 @@ socket.on('video_frame', function (frame_data) {
     };
 });
 
-socket.on('messages_from_server', function (data) {
-    mess.innerHTML = data;
+
+socket.on('lock_status', function (data) {
+    console.log('lock_status')
+    lock_status.innerHTML = data.data;
 });
+
+lock_status.on('DOMSubtreeModified', function() {
+    var lock_value = $(this).text();
+    $('.lock').text(lock_value);
+});
+
 
 function logout() {
     window.location.href = '/iot/logout';
 };
 
-//
-//emit('toast_notification', {'message': message, 'title', })
-
-
-
-//
-function showSuccessToast() {
-    toast({
-          title: "Thành công!",
-          message: "Nhận diện khuôn mặt thành công.",
-          type: "success",
-          duration: 2000
-    });
-  }
-
-function showErrorToast() {
-    toast({
-          title: "Thất bại!",
-          message: "Có lỗi xảy ra, vui lòng liên hệ quản trị viên.",
-          type: "error",
-          duration: 5000
-    });
-}
+function open_lock(){
+    lock_top.style.top = '-8rem';
+};

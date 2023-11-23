@@ -3,3 +3,4 @@ Flask
 numpy
 Flask_SocketIO
 mediapipe
+paho-mqtt

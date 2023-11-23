@@ -6,6 +6,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Iot User</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin="anonymous" />
         <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
         <link rel="stylesheet" href="{{ url_for('static', filename='user.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='toast.css') }}">
@@ -15,23 +16,31 @@
     <body>
         <div id="toast"></div>
         <div class="container" >
-            {% if username %}
-            <h1>Xin chào {{ username }}, Test camera</h1>
-            <nav>
-                <button id="toggleCamera" onclick="toggleCamera()"> Start Streaming</button>
-                <button id="logoutButton" onclick="logout()">Log out </button>
-            </nav>
+            <div class="container-lock">
+                <div id="lock" class="lock no-animation">
+                    <dic id="lock-top">
 
-            <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
+                    </dic>
+                </div>
+                <p id="lock-status" class="lock-status"></p>
+            </div>
+            <div class="container-cam">
+                {% if username %}
+                <h1>Xin chào {{ username }}, Test camera</h1>
+                <nav>
+                    <button id="toggleCamera" onclick="toggleCamera()"> Start Streaming</button>
+                    <button id="logoutButton" onclick="logout()">Log out </button>
+                </nav>
 
-            <canvas id="processedVideo"  class="video" ></canvas>
-            <p id="timer" class="timer"></p>
+                <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
+                <canvas id="processedVideo"  class="video" ></canvas>
 
-            <p id="message" class="message"></p>
+                <p id="timer" class="timer"></p>
 
-            {% else %}
-                <p style="padding:10px; font-size:30px ">User not authenticated, please verify <a style="color:gray;" href="/iot">here</a> </p>
-            {% endif %}
+                {% else %}
+                    <p style="padding:10px; font-size:30px ">User not authenticated, please verify <a style="color:gray;" href="/iot">here</a> </p>
+                {% endif %}
+            </div>
         </div>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
