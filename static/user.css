@@ -29,14 +29,25 @@ button {
     border-radius: 10px;
 }
 
+
+
 .video {
     display: none;
+    position: relative;
     width: 48%;
     aspect-ratio: 4 / 3;
     border: 2px solid blue;
+    position: relative;
 }
 
 .message {
     display: none;
     color: #cd6ee3;
+}
+
+
+#timer {
+    display: none;
+    background-color: gray;
+    margin: 0;
 }

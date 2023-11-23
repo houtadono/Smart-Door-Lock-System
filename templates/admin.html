@@ -5,27 +5,23 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Iot User</title>
+        <title>Admin </title>
         <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
         <link rel="stylesheet" href="{{ url_for('static', filename='user.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='toast.css') }}">
 <!--        <link rel="stylesheet" href="../static/user.css">-->
     </head>
 
     <body>
-        <div id="toast"></div>
+
         <div class="container" >
             {% if username %}
             <h1>Xin chào {{ username }}, Test camera</h1>
             <nav>
-                <button id="toggleCamera" onclick="toggleCamera()"> Start Streaming</button>
+                <button id="toggleCamera" onclick="toggleCamera()">Testcam</button>
                 <button id="logoutButton" onclick="logout()">Log out </button>
             </nav>
-
             <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
-
             <canvas id="processedVideo"  class="video" ></canvas>
-            <p id="timer" class="timer"></p>
 
             <p id="message" class="message"></p>
 
@@ -35,7 +31,7 @@
         </div>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-        <script src="{{ url_for('static', filename='service_socket.js') }}"></script>
+
         <script src="{{ url_for('static', filename='user.js') }}"></script>
 <!--        <script src="../static/user.js"></script>-->
     </body>

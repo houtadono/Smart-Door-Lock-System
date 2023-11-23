@@ -8,6 +8,7 @@
     <title>Modern Login Page | theuicode.com</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='toast.css') }}">
 <!--    <link rel="stylesheet" href="../static/auth.css">-->
 </head>
 
@@ -80,6 +81,8 @@
     </div>
 
 <!--    <script src="../static/auth.js"></script>-->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='service_socket.js') }}"></script>
     <script src="{{ url_for('static', filename='auth.js') }}"></script>
 </body>
 
