@@ -1,0 +1,62 @@
+
+input[type="button"] {
+  margin: 5px;
+  padding: 5px;
+  width: 55px;
+  height: 55px;
+  border: none;
+  border-radius: 5px;
+  font-size: 20px;
+  font-weight: 500;
+  border: solid 1px black;
+  transition: unset !important;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  font-size: 2.4rem;
+    border: 1px solid black;
+    border-radius: 0.4rem;
+    width: 80%;
+    text-align: center;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+button[type="submit"] {
+    width: 18%;
+}
+
+input:active {
+  box-shadow: 0 0 5px #000;
+}
+#btnBack {
+  width: 110px;
+}
+#btnTab {
+  font-size: 14px;
+  width: 110px;
+}
+#btnCaps {
+  font-size: 14px;
+  width: 125px;
+}
+#btnEnter {
+  font-size: 14px;
+  width: 110px;
+}
+.btnShift {
+  font-size: 14px;
+  width: 152px;
+}
+.btn_down {
+  font-size: 14px;
+  width: 85px;
+}
+#btn_space {
+  font-size: 14px;
+  width: 410px;
+}

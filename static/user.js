@@ -1,13 +1,52 @@
 
 socket.emit('request_lock_status');
 
+// tab
+function openTab(evt, tab_name) {
+    const tab_contents = document.getElementsByClassName("tab-content");
+    for (let tab_content of tab_contents) {
+        tab_content.style.display = "none";
+    }
+    document.getElementById(tab_name).style.display = "flex";
+}
+
+// lock
+var lock_status = document.getElementById('lock-status');
+var lock = document.getElementById('lock');
+var lock_top = document.getElementById('lock-top');
+
+socket.on('lock_status', function (data) {
+    console.log('lock_status')
+    if(data.data == 1){
+        lock_top.style.top = '-8rem'; // open
+        lock_status.innerHTML = "Cửa mở";
+    }else{
+        lock_top.style.top = '-6rem'; // close
+        lock_status.innerHTML = "Cửa khóa";
+    }
+});
+
+// pin code
+let pincode = document.getElementById("pincode");
+
+function clickPincode(value) {
+  pincode.value += value;
+}
+
+function backspace() {
+  pincode.value = pincode.value.slice(0, -1);
+}
+
+function check_pincode() {
+    socket.emit('check_pincode', pincode.value);
+}
+
+
+// camera
 var videoElement = document.getElementById('video');
 var processedVideoElement = document.getElementById('processedVideo');
 var bothVideo = document.querySelectorAll('.video');
-var lock_status = document.getElementById('lock-status');
 var timerElement = document.getElementById('timer');
-var lock = document.getElementById('lock');
-var lock_top = document.getElementById('lock-top');
 var stream = null;
 var cameraOn = false;
 
@@ -65,7 +104,6 @@ async function toggleCamera() {
             console.error('Error accessing camera:', error);
         }
     } else {
-        open_lock();
         if (stream) {
             stream.getTracks().forEach(function (track) {
                 track.stop();
@@ -92,22 +130,9 @@ socket.on('video_frame', function (frame_data) {
     };
 });
 
+// socket.on('')
 
-socket.on('lock_status', function (data) {
-    console.log('lock_status')
-    lock_status.innerHTML = data.data;
-});
-
-lock_status.on('DOMSubtreeModified', function() {
-    var lock_value = $(this).text();
-    $('.lock').text(lock_value);
-});
-
-
+// other
 function logout() {
     window.location.href = '/iot/logout';
-};
-
-function open_lock(){
-    lock_top.style.top = '-8rem';
 };

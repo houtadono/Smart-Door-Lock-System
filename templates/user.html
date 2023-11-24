@@ -10,32 +10,56 @@
         <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
         <link rel="stylesheet" href="{{ url_for('static', filename='user.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='toast.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='keyboard.css') }}">
 <!--        <link rel="stylesheet" href="../static/user.css">-->
     </head>
 
     <body>
         <div id="toast"></div>
         <div class="container" >
-            <div class="container-lock">
+            <div class="container-lock card">
                 <div id="lock" class="lock no-animation">
-                    <dic id="lock-top">
+                    <div id="lock-top">
 
-                    </dic>
+                    </div>
                 </div>
-                <p id="lock-status" class="lock-status"></p>
+                <h2 id="lock-status" class="lock-status"></h2>
             </div>
-            <div class="container-cam">
+            <div class="container-user card">
                 {% if username %}
-                <h1>Xin chào {{ username }}, Test camera</h1>
                 <nav>
-                    <button id="toggleCamera" onclick="toggleCamera()"> Start Streaming</button>
-                    <button id="logoutButton" onclick="logout()">Log out </button>
+                    <h1>Xin chào {{ username }}, Test camera</h1>
+                    <button id="btn-pincode" onclick= "openTab(event, 'tab-pincode')">Mã Pin</button>
+                    <button id="btn-camera" onclick= "openTab(event, 'tab-camera')">Camera</button>
+                    <button id="logoutButton" onclick="logout()">Log out</button>
                 </nav>
+                <div class="divider" style="border-bottom: 2px dashed #e0d4d4; margin: 1.4rem auto"></div>
+                <div id="tab-pincode" class="tab-content">
+                     <div class="form-pincode">
+                        <input type="number" id="pincode" name="pincode" disabled>
+                        <button type="submit" onclick="check_pincode()">Gửi</button>
+                    </div>
 
-                <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
-                <canvas id="processedVideo"  class="video" ></canvas>
+                    <input type="button" value="1" onclick="clickPincode('1')"/>
+                    <input type="button" value="2" onclick="clickPincode('2')"/>
+                    <input type="button" value="3" onclick="clickPincode('3')"/>
+                    <input type="button" value="4" onclick="clickPincode('4')"/>
+                    <input type="button" value="5" onclick="clickPincode('5')"/>
+                    <input type="button" value="6" onclick="clickPincode('6')"/>
+                    <input type="button" value="7" onclick="clickPincode('7')"/>
+                    <input type="button" value="8" onclick="clickPincode('8')"/>
+                    <input type="button" value="9" onclick="clickPincode('9')"/>
+                    <input type="button" value="0" onclick="clickPincode('0')"/>
+                    <input type="button" value="Backspace" id="btnBack" onclick="backspace()"/>
+                </div>
 
-                <p id="timer" class="timer"></p>
+                <div id="tab-camera" class="tab-content">
+                    <button id="toggleCamera" onclick="toggleCamera()">Camera</button>
+                    <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
+                    <canvas id="processedVideo"  class="video" ></canvas>
+                    <p id="timer" class="timer"></p>
+                </div>
+
 
                 {% else %}
                     <p style="padding:10px; font-size:30px ">User not authenticated, please verify <a style="color:gray;" href="/iot">here</a> </p>

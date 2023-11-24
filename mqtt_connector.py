@@ -43,7 +43,9 @@ def on_disconnect(client, userdata, rc):
 
 
 class MQTTConnector:
-    def __init__(self, broker_address, port, username, password, protocol=paho.MQTTv5, tls=mqtt.client.ssl.PROTOCOL_TLS):
+    def __init__(self, broker_address, port, username, password, protocol=paho.MQTTv31, tls=None):
+        protocol = paho.MQTTv5
+        tls = mqtt.client.ssl.PROTOCOL_TLS
         self.connected = False
         self.client = paho.Client(client_id="", userdata=None, protocol=protocol)
         self.client.on_connect = on_connect
@@ -101,10 +103,16 @@ if __name__ == '__main__':
     username = "adminiot"
     password = "Adminiot123"
 
-    conn = MQTTConnector(broker_address, port, username, password, protocol=paho.MQTTv5, tls=mqtt.client.ssl.PROTOCOL_TLS)
+    broker_address = "mqtt-dashboard.com"
+    port = 1883
+    username = "b20dcat170"
+    password = "Thanhtung170"
 
-    topic = "#"
+    conn = MQTTConnector(broker_address, port, username, password, protocol=paho.MQTTv31, tls=None)
+    # conn = MQTTConnector(broker_address, port, username, password, protocol=paho.MQTTv5, tls=mqtt.client.ssl.PROTOCOL_TLS)
+
+    topic = "e"
     conn.client.subscribe(topic, qos=0)
     start = -1
-    conn.send_turn_on()
+    conn.client.publish(topic, "abc",qos=0)
     conn.client.loop_forever()

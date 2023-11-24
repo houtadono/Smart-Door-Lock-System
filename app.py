@@ -112,6 +112,12 @@ def video_frame(frame_data):
     emit('video_frame', result, broadcast=False)
     emit('messages_from_server', "send frame")
 
+@socketio.on('check_pincode')
+def check_pincode(pincode):
+    if pincode == '1234':
+        print(1)
+    pass
+
 @socketio.on('request_lock_status')
 def request_lock_status():
     if conn.msg is None:
@@ -147,8 +153,15 @@ if __name__ == '__main__':
     username = "adminiot"
     password = "Adminiot123"
 
+
+    # broker_address = "mqtt-dashboard.com"
+    # port = 1883
+    # username = "b20dcat170"
+    # password = "Thanhtung170"
+    #
+
     conn = MQTTConnector(broker_address, port, username, password)
-    topic = "#"
+    topic = "ESP32/MC38"
     conn.client.subscribe(topic, qos=0)
 
     socketio.start_background_task(target=conn.client.loop_forever)
