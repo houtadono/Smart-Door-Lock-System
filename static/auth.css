@@ -107,7 +107,7 @@ body {
     color: white;
 }
 
-.form-login {
+.form-auth {
     width: 100%;
     grid-area: main-content;
     display: flex;
@@ -163,7 +163,7 @@ body {
     color: #9a9a9a;
 }
 
-.login-btn {
+.btn-submit {
     width: 68%;
     padding: 10px;
     color: white;

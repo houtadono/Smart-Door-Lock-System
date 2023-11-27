@@ -1,5 +1,4 @@
 
-socket.emit('request_lock_status');
 
 // tab
 function openTab(evt, tab_name) {
@@ -7,7 +6,16 @@ function openTab(evt, tab_name) {
     for (let tab_content of tab_contents) {
         tab_content.style.display = "none";
     }
+    var buttons = document.querySelectorAll('.btn-select-tab');
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.remove('btn-selected');
+    }
+    event.currentTarget.classList.add('btn-selected');
+
     document.getElementById(tab_name).style.display = "flex";
+    if(cameraOn && tab_name!="tab-camera"){
+        toggleCamera()
+    }
 }
 
 // lock
@@ -63,7 +71,7 @@ async function toggleCamera() {
 
             videoElement.srcObject = stream;
             cameraOn = true;
-            document.getElementById('toggleCamera').textContent = 'Stop Streaming';
+            document.getElementById('toggleCamera').textContent = 'Ngừng xác thực';
             var elapsedTime = 0;  // Biến để theo dõi thời gian chạy camera
             lock.classList.toggle('no-animation');
             sendFrame = setInterval( function() {
@@ -85,19 +93,19 @@ async function toggleCamera() {
                 socket.emit('video_frame', frameData);
 
                  // Kiểm tra sau 30 giây
-                if (elapsedTime === 3000) {
-                    console.log('Thông báo sau 10 giây');
-                }
-                if (elapsedTime === 5000) {
-                    console.log('Dừng sau 1/4 phút');
-                    toast({
-                        type: "error",
-                        title: 'Thất bại!',
-                        message: 'Xác thực không thành công! Vui lòng thử lại...',
-                        duration: 3000
-                    })
-                    toggleCamera();
-                }
+//                if (elapsedTime === 3000) {
+//                    console.log('Thông báo sau 10 giây');
+//                }
+//                if (elapsedTime === 5000) {
+//                    console.log('Dừng sau 1/4 phút');
+//                    toast({
+//                        type: "error",
+//                        title: 'Thất bại!',
+//                        message: 'Xác thực không thành công! Vui lòng thử lại...',
+//                        duration: 3000
+//                    })
+//                    toggleCamera();
+//                }
 
             } , 100);
         } catch (error) {
@@ -122,12 +130,16 @@ async function toggleCamera() {
 }
 
 socket.on('video_frame', function (frame_data) {
-    const processedCtx = processedVideoElement.getContext('2d');
-    const processedImage = new Image();
-    processedImage.src =  frame_data;
-    processedImage.onload = () => {
-        processedCtx.drawImage(processedImage, 0, 0, processedVideoElement.width, processedVideoElement.height);
-    };
+    if (frame_data == 'done'){
+        toggleCamera();
+    }else{
+        const processedCtx = processedVideoElement.getContext('2d');
+        const processedImage = new Image();
+        processedImage.src =  frame_data;
+        processedImage.onload = () => {
+            processedCtx.drawImage(processedImage, 0, 0, processedVideoElement.width, processedVideoElement.height);
+        };
+    }
 });
 
 // socket.on('')
@@ -136,3 +148,9 @@ socket.on('video_frame', function (frame_data) {
 function logout() {
     window.location.href = '/iot/logout';
 };
+
+var tabPincode = document.getElementById('tab-pincode')
+if (tabPincode){
+    tabPincode.style.display = "flex";
+}
+socket.emit('request_lock_status');

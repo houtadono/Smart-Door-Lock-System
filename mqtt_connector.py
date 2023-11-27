@@ -11,7 +11,6 @@ def on_connect(client, userdata, flags, rc, properties=None):
 def on_publish(client, userdata, mid, properties=None):
     print("mid: " + str(mid))
 
-
 def on_subscribe(client, userdata, mid, granted_qos, properties=None):
     print("Subscribed: " + str(mid) + " " + str(granted_qos))
 
@@ -73,10 +72,9 @@ class MQTTConnector:
         pass
 
     def send_turn_on(self):
-        topic_send = "lock"
+        topic_send = "ESP32/MC38"
         time_sent = int(time.time())
         self.msg = {
-            'topic': topic_send,
             'payload': 1,
             'qos': 0,
             'timestamp': int(time.time()),
@@ -85,10 +83,9 @@ class MQTTConnector:
         self.client.publish(topic_send, payload_json)
 
     def send_turn_off(self):
-        topic_send = "lock"
+        topic_send = "ESP32/MC38"
         time_sent = int(time.time())
         self.msg = {
-            'topic': topic_send,
             'payload': 0,
             'qos': 0,
             'timestamp': int(time.time()),

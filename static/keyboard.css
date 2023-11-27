@@ -12,16 +12,22 @@ input[type="button"] {
   transition: unset !important;
 }
 
-input[type="number"] {
+input[type="button"]:hover{
+    background-color: #5fc7c6;
+    cursor: pointer;
+}
+
+input[type="number"].keyboard {
   -moz-appearance: textfield;
   font-size: 2.4rem;
-    border: 1px solid black;
+    border: 3px groove #361291;
     border-radius: 0.4rem;
     width: 80%;
     text-align: center;
+    color: red;
 }
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+input[type="number"].keyboard::-webkit-inner-spin-button,
+input[type="number"].keyboard::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }

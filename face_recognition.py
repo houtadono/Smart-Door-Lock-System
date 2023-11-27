@@ -1,20 +1,47 @@
 import os
 import cv2
 import numpy as np
-from face_detection import  FaceDetection
+from _testcapi import DBL_MAX
 
+from face_detection import  FaceDetection
+from sklearn.utils import shuffle
 class FaceRecognition:
-    def __init__(self):
+    def __init__(self, count_frame_face=40):
         self.face_detection = FaceDetection()
-        self.count_frame_face = 80
-        self.recognizer = cv2.face_LBPHFaceRecognizer.create()
+        self.count_frame_face = count_frame_face
+        self.recognizer = cv2.face_LBPHFaceRecognizer.create(radius = 1,neighbors = 8,grid_x = 8,grid_y = 8,threshold = DBL_MAX)
         self.features = []
         self.labels = []
-        self.idLabels = []
+        self.id_label = {}
 
         pass
 
-    def read_database(self):
+
+    def load_model(self, model_path='face_train.yml'):
+        if os.path.exists(model_path):
+            self.recognizer = cv2.face.LBPHFaceRecognizer_create()
+            self.recognizer.read(model_path)
+            self.features = np.load('features.npy', allow_pickle=True)
+            self.labels = np.load('labels.npy')
+            self.id_label = np.load('id_label.npy')
+            print("Model loaded successfully.")
+            return 1
+        else:
+            return 0
+        pass
+    def update_model(self, features, labels, id_label):
+        self.features = np.array(features, dtype='object')
+        self.labels = np.array(labels)
+        self.id_label = id_label
+        self.features, self.labels = shuffle(self.features, self.labels, random_state=42)
+
+        print(len(self.features), self.labels, len(self.id_label))
+        self.recognizer.train(self.features, self.labels)
+        self.recognizer.save('face_train.yml')
+        np.save('features.npy', self.features)
+        np.save('labels.npy', self.labels)
+        np.save('id_label.npy', self.id_label)
+        return True
         pass
 
     def trans_a_video(self, path_video, path_image='Data\Images'):
@@ -66,16 +93,8 @@ class FaceRecognition:
             if path.endswith(".mp4"):
                 self.trans_a_video(path)
 
-    def train_pre(self):
-        pass
-
-    def train(self):
-
-        pass
-    def predict(self):
-
-        pass
 
 if  __name__ == '__main__':
     a = FaceRecognition()
+    a.load_model()
     # a.trans_video_to_frame()

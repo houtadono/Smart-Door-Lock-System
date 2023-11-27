@@ -5,34 +5,225 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Admin </title>
+        <title>Iot User</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin="anonymous" />
         <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
         <link rel="stylesheet" href="{{ url_for('static', filename='user.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='toast.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='keyboard.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
 <!--        <link rel="stylesheet" href="../static/user.css">-->
     </head>
 
     <body>
-
+        <div id="toast"></div>
         <div class="container" >
-            {% if username %}
-            <h1>Xin chào {{ username }}, Test camera</h1>
-            <nav>
-                <button id="toggleCamera" onclick="toggleCamera()">Testcam</button>
-                <button id="logoutButton" onclick="logout()">Log out </button>
-            </nav>
-            <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
-            <canvas id="processedVideo"  class="video" ></canvas>
+            <div class="container-lock card">
+                <div id="lock" class="lock no-animation">
+                    <div id="lock-top">
+                    </div>
+                </div>
+                <h2 id="lock-status" class="lock-status"></h2>
+            </div>
+            <div class="container-user card">
+                <nav>
+                    <button id="btn-pincode" class="btn-select-tab btn-selected" onclick= "openTab(event, 'tab-pincode')">Mã Pin</button>
+                    <button id="btn-camera" class="btn-select-tab" onclick= "openTab(event, 'tab-camera')">Test Camera</button>
+                    <button id="btn-manager-user" class="btn-select-tab" onclick= "openTab(event, 'tab-users')">Quản lí tài khoản</button>
+                    <button id="btn-manager-face" class="btn-select-tab" onclick= "openTab(event, 'tab-faces')">Quản lí khuôn mặt</button>
+                    <button id="btn-manager-log" class="btn-select-tab" onclick= "openTab(event, 'tab-log')">Nhật kí</button>
+                    <button id="logoutButton" class="btn-select-tab" onclick="logout()">Log out</button>
+                </nav>
+                <div class="divider" style="border-bottom: 2px dashed #e0d4d4; margin: 1.4rem auto"></div>
 
-            <p id="message" class="message"></p>
+                <div id="tab-pincode" class="tab-content">
+                     <div class="form-pincode">
+                        <input type="number" class="keyboard" id="pincode" name="pincode" disabled>
+                        <button type="submit" onclick="check_pincode()">Gửi</button>
+                    </div>
 
-            {% else %}
-                <p style="padding:10px; font-size:30px ">User not authenticated, please verify <a style="color:gray;" href="/iot">here</a> </p>
-            {% endif %}
+                    <input type="button" class="keyboard" value="1" onclick="clickPincode('1')"/>
+                    <input type="button" class="keyboard" value="2" onclick="clickPincode('2')"/>
+                    <input type="button" class="keyboard" value="3" onclick="clickPincode('3')"/>
+                    <input type="button" class="keyboard" value="4" onclick="clickPincode('4')"/>
+                    <input type="button" class="keyboard" value="5" onclick="clickPincode('5')"/>
+                    <input type="button" class="keyboard" value="6" onclick="clickPincode('6')"/>
+                    <input type="button" class="keyboard" value="7" onclick="clickPincode('7')"/>
+                    <input type="button" class="keyboard" value="8" onclick="clickPincode('8')"/>
+                    <input type="button" class="keyboard" value="9" onclick="clickPincode('9')"/>
+                    <input type="button" class="keyboard" value="0" onclick="clickPincode('0')"/>
+                    <input type="button" class="keyboard" value="Backspace" id="btnBack" onclick="backspace()"/>
+                </div>
+                <div id="tab-camera" class="tab-camera tab-content">
+                    <div class="tab-camera--sub">
+                        <button id="toggleCamera" onclick="toggleCamera()">Bắt đầu xác thực</button>
+                        <p id="timer" class="timer"></p>
+                    </div>
+                    <div class="tab-camera--sub">
+                        <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
+                        <canvas id="processedVideo"  class="video" ></canvas>
+                    </div>
+                </div>
+                <div id="tab-users" class="tab-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Password</th>
+                                <th>Role</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-users"> </tbody>
+                    </table>
+                </div>
+                <div id="tab-faces" class="tab-content" style=" flex-direction: column">
+                    <button class="btn-showModal" onclick="click_showModal('.modal-people')" style="width:30%; margin:0.4rem 1rem">
+                        Thêm khuôn mặt xác thực
+                    </button>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên</th>
+                                <th>Giới tính</th>
+                                <th>Tuổi</th>
+                                <th>Số phòng</th>
+                                <th>Lựa chọn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-people">
+
+                        </tbody>
+                    </table>
+                </div>
+                <div id="tab-log" class="tab-content" style=" flex-direction: column">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>ID người</th>
+                                <th>Tên người</th>
+                                <th>Trạng thái</th>
+                                <th>Hình ảnh</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-log">
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
         </div>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <!-- Modal -->
+    <div class="modal js-modal modal-users">
+        <div class="modal-container js-modal-container">
+<!--            <button class="modal-close js-modal-close" data-modal-type="users">-->
+<!--                <i class="modal-close-icon ti-close"></i>-->
+<!--            </button>-->
+<!--            <header class="modal-header">-->
+<!--                <i class="modal-heading-icon ti-bag"></i>-->
+<!--                Tickets-->
+<!--            </header>-->
+<!--            <div class="modal-body">-->
+<!--                <label for="ticket-count" class="modal-label">-->
+<!--                    <i class="ti-shopping-cart"></i>-->
+<!--                    Tickets, $15 per person-->
+<!--                </label>-->
+<!--                <input id="ticket-count" type="text" class="modal-input" placeholder="How many?">-->
+<!--                <label for="ticket-email" class="modal-label">-->
+<!--                    <i class="ti-user"></i>-->
+<!--                    Send To-->
+<!--                </label>-->
+<!--                <input id="ticket-email" type="text" class="modal-input" placeholder="Enter email....">-->
+<!--                <button id="buy-tickets-btn">-->
+<!--                    Pay-->
+<!--                    <i class="check-icon ti-check"></i>-->
+<!--                </button>-->
+<!--            </div>-->
+<!--            <footer class="modal-footer">-->
+<!--                <p class="modal-help">Need <a href="">help?</a></p>-->
+<!--            </footer>-->
+        </div>
+    </div>
+    <div class="modal js-modal modal-people">
+        <div class="modal-container js-modal-container">
+            <button class="modal-close js-modal-close" data-modal-type="people">
+                Close
+            </button>
+            <header class="modal-header">
+                Đăng kí khuôn mặt
+            </header>
+            <div class="modal-body">
+                <div class="modal-row">
+                    <label class="modal-label">
+                        Khuôn mặt:
+                    </label>
+                    <button class="btn-addPeople btn-addPeople-camera" onclick="toggleShowCameraAdd()">Quét camera</button>
+                    <button class="btn-addPeople btn-addPeople-upload" >Tải file</button>
+                </div>
+                <div class="modal-row">
+                    <label " class="modal-label">
+                        Tiến trình load:
+                    </label>
+                    <div class="loader-container">
+                        <div class="loader" id="loader"></div>
+                        <div class="percentage" id="percentage">0%</div>
+                    </div>
+                </div>
+                <div class="modal-row tab-camera-add show-off">
+                    <div class="tab-camera--sub">
+                        <button id="toggleCamera-add" onclick="toggleCamera_add()">Bắt đầu quét qua camera</button>
+                        <button id="resetCamera-add" onclick="resetCamera_add()">Xóa cache</button>
+                        <p id="timer-add" class="timer-add"></p>
+                    </div>
+                    <div class="tab-camera--sub">
+                        <video id="video-add" class="video-add"  style="transform: scaleX(-1);" autoplay></video>
+                        <canvas id="processedVideo-add"  class="video-add" ></canvas>
+                    </div>
+                </div>
+                <form id="form-add" class="modal-row form-add" >
+                    <div class="form-row">
+                        <div class="form-column form-column-left">
+                            <label for="name-add" class="modal-label">
+                                Họ và tên:
+                            </label>
+                            <input id="name-add" type="text" class="modal-input" placeholder="Nhập họ và tên..." required>
+                        </div>
+                        <div class="form-column form-column-right">
+                            <label for="age-add">Tuổi:</label>
+                            <input type="number" id="age-add" name="age" min="3" max="100" inputmode="numeric" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-column form-column-left">
+                            <label for="room-add" class="modal-label">
+                                Phòng:
+                            </label>
+                            <input id="room-add" type="text" class="modal-input" placeholder="Nhập số phòng..." required>
+                        </div>
+                        <div class="form-column form-column-right">
+                            <label for="gender-add">Giới tính:</label>
+                            <select id="gender-add" name="gender" required>
+                                <option value="male">Nam</option>
+                                <option value="female">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
 
-        <script src="{{ url_for('static', filename='user.js') }}"></script>
+                    <button type="submit" id="dangki-btn" style="width:40%; margin:1rem auto 0">
+                        Đăng kí
+                    </button>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <script src="{{ url_for('static', filename='service_socket.js') }}"></script>
+        <script src="{{ url_for('static', filename='admin.js') }}"></script>
 <!--        <script src="../static/user.js"></script>-->
     </body>
 

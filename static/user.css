@@ -22,24 +22,30 @@ body {
 .container {
     width: 90%;
     margin: 0 auto;
-    display: flex;
-    justify-content: space-evenly;
 }
 
 .card {
     background-color: white;
     padding: 2rem;
-    margin-top: 2rem;
     border-radius: 1rem;
     box-shadow: 7px 7px 50px -10px rgba(0,0,0,0.1);
     border: .1rem solid black;
-    margin: 2rem;
+    margin: auto;
+}
+.container-user{
+    margin-top:2rem;
 }
 
 .container-lock {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    height: 50vh;
+    position: fixed;
+    margin-right: 1rem;
+    width: 13rem;
+    transform: translateY(-70%);
+    top:50%;
 }
 
 .tab-content {
@@ -53,6 +59,7 @@ body {
 
 .container-user {
     flex: 1;
+    margin-left: 16rem;
 }
 
 #tab-pincode {
@@ -70,31 +77,47 @@ button {
     font-size:20px;
     padding: 5px;
     border-radius: .5rem;
+    transition: unset;
 }
 
+.btn-selected {
+    color: white;
+    background-color: #3765a3;
+}
 
+button:hover {
+    color: white;
+    background-color: green;
+    cursor: pointer;
+}
 
-.video {
+.tab-camera {
+    flex-direction: column;
+}
+
+.tab-camera--sub {
+    display: flex;
+    text-align: center;
+    justify-content: space-evenly;
+}
+
+.tab-camera--sub + .tab-camera--sub {
+    margin-top:1rem;
+}
+
+.video, .video-add {
     display: none;
-    position: relative;
     width: 48%;
     aspect-ratio: 4 / 3;
     border: 2px solid blue;
     position: relative;
 }
 
-.message {
+#timer, #timer-add {
     display: none;
-    color: #cd6ee3;
-}
-
-
-#timer {
-    display: none;
-    background-color: gray;
+    font-size: 1.4rem;
     margin: 0;
 }
-
 
 .lock {
     font-size: 8px;

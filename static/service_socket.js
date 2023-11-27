@@ -47,7 +47,6 @@ function toast({ title = "", message = "", type = "info", duration = 3000 }) {
       }
 }
 
-
 socket.on('toast_notification', function (data) {
     toast({
         title: data.title,
@@ -55,4 +54,19 @@ socket.on('toast_notification', function (data) {
         type: data.type,
         duration: data.duration
     })
+});
+
+var door = 0;
+socket.on('lock_status', function (data) {
+    var state = data.data
+    if (state != door){
+        const message = state === 1 ? 'Cửa được mở!!!' : 'Cửa đã đóng!!!';
+        toast({
+            title: 'Thông báo',
+            message: message,
+            type: 'info',
+            duration: 2000,
+        });
+    }
+    door = state;
 });

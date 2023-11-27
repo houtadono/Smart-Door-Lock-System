@@ -29,14 +29,14 @@
                 {% if username %}
                 <nav>
                     <h1>Xin chào {{ username }}, Test camera</h1>
-                    <button id="btn-pincode" onclick= "openTab(event, 'tab-pincode')">Mã Pin</button>
-                    <button id="btn-camera" onclick= "openTab(event, 'tab-camera')">Camera</button>
-                    <button id="logoutButton" onclick="logout()">Log out</button>
+                    <button id="btn-pincode" class="btn-select-tab btn-selected" onclick= "openTab(event, 'tab-pincode')">Mã Pin</button>
+                    <button id="btn-camera" class="btn-select-tab" onclick= "openTab(event, 'tab-camera')">Camera</button>
+                    <button id="logoutButton" class="btn-select-tab" onclick="logout()">Log out</button>
                 </nav>
                 <div class="divider" style="border-bottom: 2px dashed #e0d4d4; margin: 1.4rem auto"></div>
                 <div id="tab-pincode" class="tab-content">
                      <div class="form-pincode">
-                        <input type="number" id="pincode" name="pincode" disabled>
+                        <input type="number" class="keyboard" id="pincode" name="pincode" disabled>
                         <button type="submit" onclick="check_pincode()">Gửi</button>
                     </div>
 
@@ -52,12 +52,16 @@
                     <input type="button" value="0" onclick="clickPincode('0')"/>
                     <input type="button" value="Backspace" id="btnBack" onclick="backspace()"/>
                 </div>
+                <div id="tab-camera" class="tab-camera tab-content">
 
-                <div id="tab-camera" class="tab-content">
-                    <button id="toggleCamera" onclick="toggleCamera()">Camera</button>
-                    <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
-                    <canvas id="processedVideo"  class="video" ></canvas>
-                    <p id="timer" class="timer"></p>
+                    <div class="tab-camera--sub">
+                        <button id="toggleCamera" onclick="toggleCamera()">Bắt đầu xác thực</button>
+                        <p id="timer" class="timer"></p>
+                    </div>
+                    <div class="tab-camera--sub">
+                        <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
+                        <canvas id="processedVideo"  class="video" ></canvas>
+                    </div>
                 </div>
 
 

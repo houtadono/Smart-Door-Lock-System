@@ -54,3 +54,64 @@ for (let textInput of textInputs) {
         event.stopImmediatePropagation()
     });
 }
+
+
+document.getElementById('form-register').addEventListener('submit', function(event) {
+    event.preventDefault(); // Ngăn chặn hành động mặc định của form
+
+    // Lấy giá trị từ các trường input
+    var username = this.elements['username-register'].value;
+    var password = this.elements['password-register'].value;
+    var confirmPassword = this.elements['confirmPassword-register'].value;
+    console.log(username, password, confirmPassword);
+
+    // Kiểm tra xác nhận mật khẩu
+    if (password !== confirmPassword) {
+        toast({
+            title: "Warning",
+            message: "Password and Confirm Password do not match",
+            type: "warning",
+        })
+        return;
+    }
+
+    fetch('/iot/register', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: username,
+            password: password,
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.result == 1) {
+        // Đăng ký thành công
+            toast({
+                title: "Thành công",
+                message: "Tạo tài khoản thành công",
+                type: "success",
+            })
+        } else if (data.result === 0) {
+            // Tài khoản đã tồn tại
+            toast({
+                title: "Cảnh báo",
+                message: "Tài khoản đã tồn tại",
+                type: "warning",
+            })
+        } else {
+            // Lỗi không xác định
+            toast({
+                title: "Lỗi không xác định",
+                message: "Tạo tài khoản không thành công",
+                type: "error",
+            })
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+});
+
