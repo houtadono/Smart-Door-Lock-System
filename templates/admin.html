@@ -30,6 +30,7 @@
                     <button id="btn-pincode" class="btn-select-tab btn-selected" onclick= "openTab(event, 'tab-pincode')">Mã Pin</button>
                     <button id="btn-camera" class="btn-select-tab" onclick= "openTab(event, 'tab-camera')">Test Camera</button>
                     <button id="btn-manager-user" class="btn-select-tab" onclick= "openTab(event, 'tab-users')">Quản lí tài khoản</button>
+                     <button id="btn-manager-pincode" class="btn-select-tab" onclick= "openTab(event, 'tab-pincodes')">Quản lí mã pin</button>
                     <button id="btn-manager-face" class="btn-select-tab" onclick= "openTab(event, 'tab-faces')">Quản lí khuôn mặt</button>
                     <button id="btn-manager-log" class="btn-select-tab" onclick= "openTab(event, 'tab-log')">Nhật kí</button>
                     <button id="logoutButton" class="btn-select-tab" onclick="logout()">Log out</button>
@@ -37,7 +38,7 @@
                 <div class="divider" style="border-bottom: 2px dashed #e0d4d4; margin: 1.4rem auto"></div>
 
                 <div id="tab-pincode" class="tab-content">
-                    <h1>Mã pin là: 123456</h1>
+                    <h1>Nhập mã pin: </h1>
                      <div class="form-pincode">
                         <input type="number" class="keyboard" id="pincode" name="pincode" disabled>
                         <button type="submit" onclick="check_pincode()">Gửi</button>
@@ -64,6 +65,35 @@
                         <video id="video" class="video"  style="transform: scaleX(-1);" autoplay></video>
                         <canvas id="processedVideo"  class="video" ></canvas>
                     </div>
+                </div>
+                <div id="tab-pincodes" class="tab-content" style=" flex-direction: column">
+                    <form  id="form-pincode" style="font-size:1.4rem">
+                        <div>
+                            <label for="code">Mã Pin:</label>
+                            <input type="text" name="code"  id="code" required>
+                            <label for="note">Ghi chú: </label>
+                            <input type="text" name="note"  id="note" required>
+                        </div>
+                        <label for="expiry">Hạn sử dụng:</label>
+                        <input type="datetime-local" name="expiry"  id="expiry" required>
+                        <button type="submit">Tạo Mã Pin</button>
+                    </form>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã pin</th>
+                                <th>Ghi chú</th>
+                                <th>Thời gian khởi tạo</th>
+                                <th>Hạn sử dụng</th>
+                                <th>Còn lại</th>
+                                <th>Lựa chọn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-pincode">
+
+                        </tbody>
+                    </table>
                 </div>
                 <div id="tab-users" class="tab-content">
                     <table>
@@ -103,8 +133,8 @@
                         <thead>
                             <tr>
                                 <th>Thời gian</th>
-                                <th>ID người</th>
-                                <th>Tên người</th>
+                                <th>ID </th>
+                                <th>Ghi chú</th>
                                 <th>Trạng thái</th>
                                 <th>Hình ảnh</th>
                             </tr>
@@ -162,8 +192,8 @@
                     <label class="modal-label">
                         Khuôn mặt:
                     </label>
-                    <button class="btn-addPeople btn-addPeople-camera" onclick="toggleShowCameraAdd()">Quét camera</button>
-                    <button class="btn-addPeople btn-addPeople-upload" >Tải file</button>
+                    <button class="btn-addPeople btn-addPeople-camera" onclick="openLoad(event,'tab-camera-add')">Quét camera</button>
+                    <button class="btn-addPeople btn-addPeople-upload" onclick="openLoad(event,'tab-file-add')">Tải file</button>
                 </div>
                 <div class="modal-row">
                     <label class="modal-label">
@@ -174,7 +204,7 @@
                         <div class="percentage" id="percentage">0%</div>
                     </div>
                 </div>
-                <div class="modal-row tab-camera-add show-off">
+                <div id="tab-camera-add" class="modal-row tab-load ">
                     <div class="tab-camera--sub">
                         <button id="toggleCamera-add" onclick="toggleCamera_add()">Bắt đầu quét qua camera</button>
                         <button id="resetCamera-add" onclick="resetCamera_add()">Xóa cache</button>
@@ -185,6 +215,16 @@
                         <canvas id="processedVideo-add"  class="video-add" ></canvas>
                     </div>
                 </div>
+                <div id="tab-file-add" class="modal-row tab-load ">
+                    <div class="tab-camera--sub">
+                        <form  id="uploadForm" enctype="multipart/form-data">
+                            <input type="file" name="file" id="file" style="font-size:1.4rem">
+                            <button type="button" style="width:auto" id="btn-upload" onclick="uploadFile()" >Upload</button>
+                        </form>
+                        <button id="resetFile-add" onclick="resetCamera_add()">Xóa cache</button>
+                    </div>
+                </div>
+
                 <form id="form-add" class="modal-row form-add" >
                     <div class="form-row">
                         <div class="form-column form-column-left">

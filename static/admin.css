@@ -153,10 +153,6 @@ tbody tr:nth-of-type(even) {
     flex-direction: column;
 }
 
-.show-off {
-    display: none;
-}
-
 .form-row {
     display: flex;
     margin: 0.4rem 0;
@@ -191,6 +187,15 @@ tbody tr:nth-of-type(even) {
     height: 4rem;
 }
 
+.tab-load {
+    display: none;
+    flex-direction: column;
+}
+
+#form-pincode input{
+    font-size:1.4rem;
+}
+
 .open-status {
     background-color: #aaffaa !important;
 }
@@ -204,4 +209,9 @@ tbody tr:nth-of-type(even) {
 /* CSS cho hàng có trạng thái "cửa đóng" */
 .closed-status {
     background-color: #e6e6e6 !important; /* Màu xám nhạt */
+}
+
+input[type="file"]:hover{
+    cursor: pointer;
+
 }

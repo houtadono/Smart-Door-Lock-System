@@ -96,6 +96,41 @@ class MyFirebase:
         sorted_lst_log = sorted(lst_log, key=lambda x: x['timestamp'], reverse=True)
         return sorted_lst_log
 
+    def get_pincode(self):
+        docs = self.db.collection("pincode").stream()
+        lst_pincode = []
+        current_time = datetime.utcnow() + timedelta(hours=7)
+        for doc in docs:
+            d = doc.to_dict()
+            print(str(d['expiry_time']))
+            if   str(d['expiry_time']) < str(current_time):
+                self.delete_pincode(doc.id)
+                continue
+            d["id"] = doc.id
+            lst_pincode.append(d)
+        sorted_lst_pincode = sorted(lst_pincode, key=lambda x: x['expiry_time'])
+        return sorted_lst_pincode
+
+    def check_pincode(self, pincode):
+        docs = self.db.collection("pincode").stream()
+        current_time = datetime.utcnow() + timedelta(hours=7)
+        result = None
+        for doc in docs:
+            d = doc.to_dict()
+            if str(d['expiry_time']) < str(current_time):
+                self.delete_pincode(doc.id)
+                continue
+            if d['code'] == pincode:
+                result = d
+                break
+        return result
+
+
+    def delete_pincode(self, pincodeid):
+        doc_ref = self.db.collection('pincode').document(pincodeid)
+        doc_ref.delete()
+        pass
+
     def delete_user(self, username):
         doc_ref = self.db.collection('users').document(username)
         doc_ref.delete()
@@ -144,6 +179,7 @@ class MyFirebase:
             image_url = blob.public_url
             return image_url
         except Exception as e:
+            print("cmmmmmm")
             print(f"Error uploading image: {e}")
             return None
 
@@ -174,6 +210,7 @@ class MyFirebase:
                         "{}".format(index): image_url
                     }
                     images_collection_ref.add(frame_data)
+                time.sleep(0.2)
             return user_id
         except Exception as e:
             print(f"Error: {e}")
@@ -182,6 +219,10 @@ class MyFirebase:
     def add_log(self, log_entry):
         logs_collection = self.db.collection('logs')
         logs_collection.add(log_entry)
+
+    def add_pincode(self, pincode_entry):
+        pincode_collection = self.db.collection('pincode')
+        pincode_collection.add(pincode_entry)
 
     def get_image_from_storage(self, user_id, frame_index):
         path = f'dataset/{user_id}/image{frame_index}.jpg'

@@ -16,6 +16,9 @@ function openTab(evt, tab_name) {
     if(cameraOn && tab_name!="tab-camera"){
         toggleCamera();
     }
+    if(tab_name == 'tab-pincodes'){
+        getPincode();
+    }
     if(tab_name == 'tab-users'){
         getUsers();
     }
@@ -174,6 +177,105 @@ updateLoader(0);
 function logout() {
     window.location.href = '/iot/logout';
 };
+// pincode
+function formatTime(seconds) {
+    const days =  Math.floor(seconds / 3600 / 24);
+    const hours = Math.floor((seconds/3600) %24);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    const formattedHours = String(hours).padStart(2, '0');
+    const formattedMinutes = String(minutes).padStart(2, '0');
+    const formattedSeconds = String(remainingSeconds).padStart(2, '0');
+    return `${days}ngày ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+}
+
+function getPincode() {
+    fetch('/iot/admin/get-pincode', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        var tableBody = document.getElementById('table-body-pincode');
+        while (tableBody.firstChild) {
+            tableBody.removeChild(tableBody.firstChild);
+        }
+        lst_pincode = data.pincodes;
+        lst_pincode.forEach(pincode => {
+            const row = tableBody.insertRow();
+
+            row.insertCell(0).textContent = pincode.code;
+            row.insertCell(1).textContent = pincode.note;
+            row.insertCell(2).textContent = pincode.init_time;
+            row.insertCell(3).textContent = pincode.expiry_time;
+            row.insertCell(4).textContent = 0;
+            const expiryTime = new Date(pincode.expiry_time);
+             const intervalId = setInterval(function () {
+                const currentTime = new Date();
+                const timeDifference = expiryTime - currentTime - 7*3600000;
+                const remainingSeconds = Math.floor(timeDifference / 1000);
+                row.cells[4].textContent = formatTime(remainingSeconds);
+                if (remainingSeconds <= 0) {
+                    clearInterval(intervalId);
+                    tableBody.removeChild(row);
+                }
+            }, 1000);
+
+            const deleteCell = row.insertCell(5);
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Xóa';
+            deleteButton.addEventListener('click', function() {
+                socket.emit('delete_pincode', pincode.id);
+            });
+            deleteCell.appendChild(deleteButton);
+        });
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+document.getElementById('form-pincode').addEventListener('submit', function(event) {
+    event.preventDefault();
+    var pincode = document.getElementById('code').value;
+    var note = document.getElementById('note').value;
+    var expiry = document.getElementById('expiry').value;
+    var data = {
+        code: pincode,
+        note: note,
+        expiry: expiry,
+    };
+    fetch('/iot/admin/add-pincode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.done == 0){
+             toast({
+                title: "Lỗi không xác định",
+                message: "Thêm mã pin không thành công",
+                type: "error",
+                duration: 2000,
+            })
+        }else{
+            toast({
+                title: "Thành công",
+                message: `Thêm mã pin thành công`,
+                type: "success",
+            })
+            document.getElementById('btn-manager-pincode').click();
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+});
 
 // user
 function getUsers() {
@@ -353,11 +455,23 @@ modalContainers.forEach(container => {
 });
 
 
-
 // add person people
-function toggleShowCameraAdd(){
-    document.querySelector('.tab-camera-add').classList.toggle("show-off");
-    document.querySelector('.btn-addPeople').classList.toggle("btn-selected");
+function openLoad(evt,tabname){
+    const tabloads = document.querySelectorAll('.tab-load')
+    for (let tabload of tabloads){
+        tabload.style.display = "none";
+    }
+
+    var buttons = document.querySelectorAll('.btn-addPeople');
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.remove('btn-selected');
+    }
+    event.currentTarget.classList.add('btn-selected');
+
+    document.getElementById(tabname).style.display = "flex";
+
+//    document.querySelector('.tab-camera-add').classList.toggle("show-off");
+//    document.querySelector('.btn-addPeople').classList.toggle("btn-selected");
 }
 
 
@@ -452,6 +566,9 @@ socket.on('video_frame_add', function (data) {
             type: "success",
         })
     }
+    if(data.done==0){
+         updateLoader(data.percent);
+    }
 });
 
 function resetCamera_add() {
@@ -503,7 +620,6 @@ document.getElementById('form-add').addEventListener('submit', function(event) {
                 document.getElementById('btn-manager-face').click();
                 socket.emit('train_all');
             }
-
         })
         .catch((error) => {
             console.error('Error:', error);
@@ -531,4 +647,25 @@ socket.on('message_server_admin', function(data){
      if(data=='delete_user_ok'){
         document.querySelector('#btn-manager-user').click();
     };
+    if(data=='delete_pincode_ok'){
+        document.querySelector('#btn-manager-pincode').click();
+    }
 })
+
+function uploadFile() {
+    var formData = new FormData(document.getElementById('uploadForm'));
+    socket.emit('join-room', 'room-upload-file');
+    fetch('/iot/admin/load-file', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+        // Handle the response as needed
+    })
+    .catch(error => {
+        console.error(error);
+        // Handle errors
+    });
+}

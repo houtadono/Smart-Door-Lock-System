@@ -1,4 +1,6 @@
 import random
+import time
+
 import cv2
 import base64
 import numpy as np
@@ -77,12 +79,41 @@ def adminGetLog():
     lst_log = fb.get_log()
     return jsonify({'logs': lst_log})
 
+@app.route('/iot/admin/get-pincode', methods=['GET'])
+@admin_permission.require(http_exception=403)
+def adminGetPincode():
+    lst_pincode = fb.get_pincode()
+    print(lst_pincode)
+    return jsonify({'pincodes': lst_pincode})
+
+@app.route('/iot/admin/add-pincode', methods=['POST'])
+@admin_permission.require(http_exception=403)
+def adminAddPincode():
+    try:
+        data = request.get_json()
+        expiry_time = data['expiry']
+        expiry_time = datetime.strptime(expiry_time, "%Y-%m-%dT%H:%M")
+        # Tính thời điểm hết hạn
+        init_time = datetime.utcnow() + timedelta(hours=7)
+        print(init_time, expiry_time)
+        pincode_entry = {
+            'code': data['code'],
+            'note': data['note'],
+            'init_time': init_time,
+            'expiry_time': expiry_time
+        }
+        fb.add_pincode(pincode_entry=pincode_entry)
+        return jsonify({'done': 1})
+    except:
+        return jsonify({'done': 0})
+    pass
 
 @app.route('/iot/admin/add-people', methods=['POST'])
 @admin_permission.require(http_exception=403)
 def adminAddPeople():
     data = request.get_json()
     global list_img
+    print('ADD people with {}img'.format(len(list_img)))
     if len(list_img) == FRAME_GET:
         save_images = random.sample(list_img, FRAME_TRAIN)
         user_id = fb.add_people(userdata=data, images=save_images)
@@ -157,6 +188,50 @@ def register():
         return jsonify({'result': result})
     pass
 
+@app.route('/iot/admin/load-file', methods=['POST'])
+@admin_permission.require(http_exception=403)
+def load_file():
+    print(request.files['file'])
+    file = request.files['file']
+    temp_path = 'temp_video.mp4'
+    file.save(temp_path)
+    capture = cv2.VideoCapture(temp_path)
+    global list_img
+    list_img = []
+    session['images'] = []
+    face_frame_count = 0
+    done = 0
+    while True:
+        _ , frame = capture.read()
+        if not _: break
+        frame, bbox_faces, distance = face_mesh.findFaceEye(frame, draw=False)
+        if bbox_faces is not None:
+            distance = round(distance, 2)
+
+            x, y, w, h = bbox_faces
+            face_frame = frame[y:y + h, x:x + w]
+            # gray = cv2.cvtColor(face_frame, cv2.COLOR_BGR2GRAY)
+            # equalized_img = cv2.equalizeHist(gray)
+            list_img.append(face_frame)
+            # cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            face_frame_count += 1
+            result = {'done': done, 'percent': round(face_frame_count * 100 / FRAME_GET, 2)}
+            socketio.emit('video_frame_add', result, room='room-upload-file')
+            if face_frame_count == FRAME_GET:
+                done = 1
+                break
+        # cv2.imshow("upload", frame)
+        # cv2.waitKey(100)
+    capture.release()
+    # result = {'done': 0, 'percent': round(face_frame_count * 100 / FRAME_GET, 2), 'frame': result_frame}
+    # emit('video_frame_add', result, broadcast=False)
+    title = "Thành công" if done == 1 else "Lỗi"
+    type = "success" if done == 1 else "warning"
+    mess = "Load file thành công" if done ==1 else "Upload không thành công!!"
+    socketio.emit('toast_notification',
+         {'title': title, 'message': mess, 'type': type, }, room = "room-upload-file")
+    return jsonify({'done': done})
+    pass
 
 ## socket
 @socketio.on('connect')
@@ -169,6 +244,11 @@ def handle_disconnect():
     print('Client disconnected')
     leave_room('all_clients')
 
+@socketio.on('join-room')
+def joinRoom(room):
+    join_room(room)
+    pass
+
 @socketio.on('start_video_frame')
 def start_video_frame():
     if 'images_no_auth' not in session:
@@ -177,7 +257,6 @@ def start_video_frame():
     pass
 @socketio.on('cant_video_frame')
 def cant_video_frame():
-
     # emit('toast_notification',
     #      {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
     log_entry = {
@@ -207,11 +286,11 @@ def video_frame(frame_data):
         # frame = cv2.resize(frame, (640, 480))
         frame = cv2.flip(frame, 1)
         frame, bbox_faces, distance = face_mesh.findFaceEye(frame, draw=False)
-        distance = round(distance, 2)
         if bbox_faces is not None:
+            distance = round(distance, 2)
             x, y, w, h = bbox_faces
             face_frame = frame[y:y + h, x:x + w]
-            if 32 < distance < 43:
+            if 25 < distance < 30:
                 gray = cv2.cvtColor(face_frame, cv2.COLOR_BGR2GRAY)
                 equalized_img = cv2.equalizeHist(gray)
                 id, conf = face_recognition.recognizer.predict(equalized_img)
@@ -360,7 +439,7 @@ def video_frame_add(frame_data):
         if bbox_faces is not None:
             x, y, w, h = bbox_faces
             face_frame = frame[y:y + h, x:x + w]
-            if 32 < distance < 43:
+            if 33 < distance < 43:
                 gray = cv2.cvtColor(face_frame, cv2.COLOR_BGR2GRAY)
                 equalized_img = cv2.equalizeHist(gray)
                 session['images'].append(face_frame)
@@ -406,6 +485,13 @@ def delete_user(username):
     emit('message_server_admin', 'delete_user_ok')
     pass
 
+@socketio.on('delete_pincode')
+def delete_pincode(pincodeid):
+    fb.delete_pincode(pincodeid)
+    emit('toast_notification',{'title': 'Thành công','message': 'Xóa thành công','type': 'success',} )
+    emit('message_server_admin', 'delete_pincode_ok')
+    pass
+
 @socketio.on('delete_people')
 def delete_people(user_id):
     fb.delete_people(user_id)
@@ -447,20 +533,26 @@ def train_all():
 
 @socketio.on('check_pincode')
 def check_pincode(pincode):
-    global pin
-    if pincode == pin:
+    result = fb.check_pincode(pincode)
+    if result is None:
+        emit('toast_notification', {'title': 'Cảnh báo', 'message': 'Mã pin chưa chính xác', 'type': 'error', })
+        log_entry = {
+            "timestamp": datetime.utcnow() + timedelta(hours=7),
+            "user_id": f'Mã pin: {pincode}',
+            "name": 'NaN',
+            "status": "Sai mã pin",
+            "image_url": "NaN"
+        }
+    else:
         emit('toast_notification', {'title': 'Thành công', 'message': 'Xác thực thành công', 'type': 'success', })
         conn.send_turn_on()
-    else:
-        emit('toast_notification', {'title': 'Cảnh báo', 'message': 'Mã pin chưa chính xác', 'type': 'error', })
-    status = "Đúng mã pin" if pincode == pin else "Sai mã pin"
-    log_entry = {
-        "timestamp": datetime.utcnow() + timedelta(hours=7),
-        "user_id": 'NaN',
-        "name": 'NaN',
-        "status": status,
-        "image_url": "NaN"
-    }
+        log_entry = {
+            "timestamp": datetime.utcnow() + timedelta(hours=7),
+            "user_id": f'Mã pin: {pincode}',
+            "name": result['note'],
+            "status": "Đúng mã pin",
+            "image_url": "NaN"
+        }
     fb.add_log(log_entry=log_entry)
     pass
 
