@@ -68,6 +68,7 @@ async function toggleCamera() {
                 v.style.display = "inline-block";
             }
             timerElement.style.display = "block";
+            socket.emit('start_video_frame');
 
             videoElement.srcObject = stream;
             cameraOn = true;
@@ -93,19 +94,26 @@ async function toggleCamera() {
                 socket.emit('video_frame', frameData);
 
                  // Kiểm tra sau 30 giây
-//                if (elapsedTime === 3000) {
-//                    console.log('Thông báo sau 10 giây');
-//                }
-//                if (elapsedTime === 5000) {
-//                    console.log('Dừng sau 1/4 phút');
-//                    toast({
-//                        type: "error",
-//                        title: 'Thất bại!',
-//                        message: 'Xác thực không thành công! Vui lòng thử lại...',
-//                        duration: 3000
-//                    })
-//                    toggleCamera();
-//                }
+                if (elapsedTime === 7000) {
+//                    console.log('Thông báo sau 7 giây');
+                    toast({
+                        type: "warning",
+                        title: 'Cảnh báo!',
+                        message: 'Chưa nhận diện được khuôn mặt',
+                        duration: 3000
+                    })
+                }
+                if (elapsedTime === 14000) {
+//                    console.log('Dừng sau 14 s');
+                    toast({
+                        type: "error",
+                        title: 'Thất bại!',
+                        message: 'Xác thực không thành công! Vui lòng thử lại...',
+                        duration: 3000
+                    })
+                    socket.emit('cant_video_frame');
+                    toggleCamera();
+                }
 
             } , 100);
         } catch (error) {
@@ -130,9 +138,9 @@ async function toggleCamera() {
 }
 
 socket.on('video_frame', function (frame_data) {
-    if (frame_data == 'done'){
+    if (frame_data == 'done' & cameraOn){
         toggleCamera();
-    }else{
+    }else if (cameraOn & frame_data != 'done'){
         const processedCtx = processedVideoElement.getContext('2d');
         const processedImage = new Image();
         processedImage.src =  frame_data;

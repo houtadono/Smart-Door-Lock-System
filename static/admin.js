@@ -24,6 +24,7 @@ function openTab(evt, tab_name) {
     }
      if(tab_name == 'tab-log'){
         getLog();
+//        setInterval(getLog, 5000);
     }
 }
 
@@ -77,7 +78,7 @@ async function toggleCamera() {
                 v.style.display = "inline-block";
             }
             timerElement.style.display = "block";
-
+            socket.emit('start_video_frame');
             videoElement.srcObject = stream;
             cameraOn = true;
             document.getElementById('toggleCamera').textContent = 'Ngừng xác thực';
@@ -101,18 +102,24 @@ async function toggleCamera() {
                 var frameData = canvas.toDataURL('image/jpeg');
                 socket.emit('video_frame', frameData);
 
-                 // Kiểm tra sau 30 giây
-//                if (elapsedTime === 3000) {
-//                    console.log('Thông báo sau 10 giây');
+//                  if (elapsedTime === 7000) {
+////                    console.log('Thông báo sau 7 giây');
+//                    toast({
+//                        type: "warning",
+//                        title: 'Cảnh báo!',
+//                        message: 'Chưa nhận diện được khuôn mặt',
+//                        duration: 3000
+//                    })
 //                }
-//                if (elapsedTime === 5000) {
-//                    console.log('Dừng sau 1/4 phút');
+//                if (elapsedTime === 14000) {
+////                    console.log('Dừng sau 14 s');
 //                    toast({
 //                        type: "error",
 //                        title: 'Thất bại!',
 //                        message: 'Xác thực không thành công! Vui lòng thử lại...',
 //                        duration: 3000
 //                    })
+//                    socket.emit('cant_video_frame');
 //                    toggleCamera();
 //                }
 
@@ -193,6 +200,14 @@ function getUsers() {
             userCell.textContent = user.username;
             passwordCell.textContent = user.password;
             roleCell.textContent = user.role;
+
+            const deleteCell = row.insertCell(3);
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Xóa';
+            deleteButton.addEventListener('click', function() {
+                socket.emit('delete_user', user.username);
+            });
+            deleteCell.appendChild(deleteButton);
         });
     })
     .catch((error) => {
@@ -267,14 +282,18 @@ function getLog() {
             row.insertCell(2).textContent = log.name;
             row.insertCell(3).textContent = log.status;
             row.insertCell(4).appendChild(imgElement);
-
-//            const deleteCell = row.insertCell(5);
-//            const deleteButton = document.createElement('button');
-//            deleteButton.textContent = 'Xóa';
-//            deleteButton.addEventListener('click', function() {
-//                socket.emit('delete_people', user.id);
-//            });
-//            deleteCell.appendChild(deleteButton);
+            if (log.status == 'Cửa mở') {
+                row.classList.add('open-status');
+            }
+            if (log.status == 'Nhận diện thành công' || log.status == 'Đúng mã pin') {
+                row.classList.add('success-status');
+            }
+            if (log.status == 'Cửa đóng') {
+                row.classList.add('closed-status');
+            }
+            if (log.status == 'Nhận diện không thành công' || log.status == 'Sai mã pin') {
+                row.classList.add('failure-status');
+            }
 
         });
     })
@@ -481,8 +500,8 @@ document.getElementById('form-add').addEventListener('submit', function(event) {
                     message: `Đăng kí khuôn mặt thành công với id ${data.user_id}`,
                     type: "success",
                 })
-                socket.emit('train_all');
                 document.getElementById('btn-manager-face').click();
+                socket.emit('train_all');
             }
 
         })
@@ -506,7 +525,10 @@ if (tabPincode){
 socket.emit('request_lock_status');
 
 socket.on('message_server_admin', function(data){
-    if(data=='delete_ok'){
+    if(data=='delete_people_ok'){
         document.querySelector('#btn-manager-face').click();
+    };
+     if(data=='delete_user_ok'){
+        document.querySelector('#btn-manager-user').click();
     };
 })

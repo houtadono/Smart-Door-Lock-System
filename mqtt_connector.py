@@ -43,8 +43,8 @@ def on_disconnect(client, userdata, rc):
 
 class MQTTConnector:
     def __init__(self, broker_address, port, username, password, protocol=paho.MQTTv31, tls=None):
-        protocol = paho.MQTTv5
-        tls = mqtt.client.ssl.PROTOCOL_TLS
+        # protocol = paho.MQTTv5
+        # tls = mqtt.client.ssl.PROTOCOL_TLS
         self.connected = False
         self.client = paho.Client(client_id="", userdata=None, protocol=protocol)
         self.client.on_connect = on_connect
@@ -66,13 +66,14 @@ class MQTTConnector:
         #     'qos': str(msg.qos),
         #     'timestamp': str(time.time()),
         # }
-        self.get_msg = 1
-        self.msg = json.loads(msg.payload)
-        print(msg.payload)
+        if str(msg.topic).startswith("ESP32/MC38"):
+            self.get_msg = 1
+            self.msg = json.loads(msg.payload)
+            print(msg.payload)
         pass
 
     def send_turn_on(self):
-        topic_send = "ESP32/MC38"
+        topic_send = "ESP32/Relay"
         time_sent = int(time.time())
         self.msg = {
             'payload': 1,

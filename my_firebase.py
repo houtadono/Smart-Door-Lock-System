@@ -16,8 +16,8 @@ class MyFirebase:
         cred = credentials.Certificate("credentials.json")
         firebase_admin.initialize_app(cred,
           {
-              "databaseURL": "https://iot-ai-facerecognition-default-rtdb.asia-southeast1.firebasedatabase.app/",
-              "storageBucket": "iot-ai-facerecognition.appspot.com"
+              "databaseURL": "https://console.firebase.google.com/u/2/project/iot-face-406403/firestore/data/~2F",
+              "storageBucket": "iot-face-406403.appspot.com"
           })
         self.bucket = storage.bucket()
         self.db = firestore.client()
@@ -42,6 +42,7 @@ class MyFirebase:
                     {
                         "username": user_data["username"],
                         "password": user_data["password"],
+                        "role": "user",
                     }
                 )
                 return 1
@@ -94,6 +95,11 @@ class MyFirebase:
             lst_log.append(d)
         sorted_lst_log = sorted(lst_log, key=lambda x: x['timestamp'], reverse=True)
         return sorted_lst_log
+
+    def delete_user(self, username):
+        doc_ref = self.db.collection('users').document(username)
+        doc_ref.delete()
+        pass
 
     def delete_people(self, user_id):
         doc_ref = self.db.collection('people').document(user_id)
@@ -158,13 +164,11 @@ class MyFirebase:
             path = 'dataset/{}'.format(user_id)
             if not os.path.exists(path):
                 os.makedirs(path)
-            # Thêm từng frame vào collection "frames"
+
             for index, frame in enumerate(images):
-                # Lưu ảnh lên Storage và nhận URL
                 image_url = self.upload_image_to_storage(frame, user_id, index)
                 cv2.imwrite(f'{path}/image{index}.jpg', frame)
 
-                # Nếu lưu ảnh thành công
                 if image_url:
                     frame_data = {
                         "{}".format(index): image_url
@@ -206,11 +210,11 @@ if __name__ == '__main__':
     }
 
     log_entry = {
-        "timestamp": datetime.utcnow().isoformat(),
-        "user_id": "123456",
-        "name": "H",
-        "status": "Nhận diện thành công",
-        "image_url": "https://example.com/path/to/face_image.jpg"
+        "timestamp": datetime.utcnow() + timedelta(hours=7),
+        "user_id": 'NaN',
+        "name": 'NaN',
+        "status": "Cửa mở",
+        "image_url": "NaN"
     }
     myFirebase.add_log(log_entry)
     # downloaded_image = myFirebase.download_image_from_storage('myWbW5P7lEW6LZvFyFxt', 3)

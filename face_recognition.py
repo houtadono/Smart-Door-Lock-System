@@ -12,7 +12,7 @@ class FaceRecognition:
         self.recognizer = cv2.face_LBPHFaceRecognizer.create(radius = 1,neighbors = 8,grid_x = 8,grid_y = 8,threshold = DBL_MAX)
         self.features = []
         self.labels = []
-        self.id_label = {}
+        self.id_label = []
 
         pass
 
@@ -32,10 +32,11 @@ class FaceRecognition:
     def update_model(self, features, labels, id_label):
         self.features = np.array(features, dtype='object')
         self.labels = np.array(labels)
-        self.id_label = id_label
+        self.id_label = np.array(id_label)
         self.features, self.labels = shuffle(self.features, self.labels, random_state=42)
 
         print(len(self.features), self.labels, len(self.id_label))
+        self.recognizer = cv2.face_LBPHFaceRecognizer.create(radius = 1,neighbors = 8,grid_x = 8,grid_y = 8,threshold = DBL_MAX)
         self.recognizer.train(self.features, self.labels)
         self.recognizer.save('face_train.yml')
         np.save('features.npy', self.features)

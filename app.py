@@ -108,9 +108,6 @@ def process_frame():
     if faces:
         face = faces[0]
         conf = int(face['score'][0])
-        # emit('messages', f"Confidence: {conf}", broadcast=False)
-
-        # for face in faces:
         x, y, w, h = face['bbox']
         cv2.rectangle(processed_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
@@ -127,7 +124,7 @@ def logout():
 def showPageSign():
     if request.method == 'GET':
         if 'user' in session:
-            return render_template('user.html', username=session.get('user'))
+            return render_template('{}.html'.format(session["role"]), username=session.get('user'))
         return render_template('auth.html')
     else:
         # username = request.form.get('username')
@@ -150,7 +147,7 @@ def showPageSign():
             identity.provides.add(RoleNeed(session['role']))
             identity_changed.send(app, identity=identity)
 
-            return render_template('user.html', username=session.get('user'))
+            return render_template('{}.html'.format(session["role"]), username=session.get('user'))
     pass
 
 @app.route('/iot/register', methods=['POST'])
@@ -172,13 +169,34 @@ def handle_disconnect():
     print('Client disconnected')
     leave_room('all_clients')
 
+@socketio.on('start_video_frame')
+def start_video_frame():
+    if 'images_no_auth' not in session:
+        session['images_no_auth'] = []
+    session['images_no_auth'] = []
+    pass
+@socketio.on('cant_video_frame')
+def cant_video_frame():
+    if len(session['images_no_auth']):
+        emit('toast_notification',
+             {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
+        log_entry = {
+            "timestamp": datetime.utcnow() + timedelta(hours=7),
+            "user_id": 'NaN',
+            "name": 'NaN',
+            "status": "Nhận diện không thành công",
+            "image_url": fb.upload_image_to_log(random.choice(session['images_no_auth']))
+        }
+        fb.add_log(log_entry=log_entry)
+        pass
+    pass
 @socketio.on('video_frame')
 def video_frame(frame_data):
     global lst_people
     processed_frame_base64 = frame_data.split(',')[1]
-    frame_data = None
     # bbox = form.get('detections')
-    try:
+    # try:
+    if processed_frame_base64 :
         # Decode the frame data
         frame_bytes = base64.b64decode(processed_frame_base64)
         processed_frame_base64 = None
@@ -204,9 +222,13 @@ def video_frame(frame_data):
                     id_label = face_recognition.id_label.tolist()[int(id)] # id 0 -> n to id_label: id_user firebase
                     if lst_people is None:
                         lst_people = fb.get_people()
+                        print(lst_people)
+                    # name = None
+                    print("id_label:", id_label)
                     for person in lst_people:
                         if person['user_id'] == id_label:
                             name = person['name']
+                            print("name",name)
                             break
 
                     if conf < 120:
@@ -228,16 +250,17 @@ def video_frame(frame_data):
                         fb.add_log(log_entry=log_entry)
                         pass
                     else:
-                        emit('toast_notification',
-                             {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
-                        log_entry = {
-                            "timestamp": datetime.utcnow() + timedelta(hours=7),
-                            "user_id": 'NaN',
-                            "name": 'NaN',
-                            "status": "Nhận diện không thành công",
-                            "image_url": fb.upload_image_to_log(frame[y:y + h, x:x + h])
-                        }
-                        fb.add_log(log_entry=log_entry)
+                        session['images_no_auth'].append(frame[y:y + h, x:x + h])
+                        # emit('toast_notification',
+                        #      {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
+                        # log_entry = {
+                        #     "timestamp": datetime.utcnow() + timedelta(hours=7),
+                        #     "user_id": 'NaN',
+                        #     "name": 'NaN',
+                        #     "status": "Nhận diện không thành công",
+                        #     "image_url": fb.upload_image_to_log(frame[y:y + h, x:x + h])
+                        # }
+                        # fb.add_log(log_entry=log_entry)
                 else:
                     cv2.putText(frame, "Too far", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1,
                                 (255, 0, 255), 2)
@@ -246,9 +269,9 @@ def video_frame(frame_data):
         _, processed_frame_data = cv2.imencode('.jpg', frame)
         frame = None
         processed_frame_base64 = base64.b64encode(processed_frame_data).decode()
-    except Exception as e:
-        print(e)
-        pass
+    # except Exception as e:
+    #     print(e)
+    #     pass
 
     result = 'data:image/jpeg;base64,' + processed_frame_base64
     emit('video_frame', result, broadcast=False)
@@ -300,11 +323,18 @@ def video_frame_add(frame_data):
     result = {'done':0, 'percent': round(face_frame_count*100/FRAME_GET,2), 'frame': result_frame}
     emit('video_frame_add', result, broadcast=False)
 
+@socketio.on('delete_user')
+def delete_user(username):
+    fb.delete_user(username)
+    emit('toast_notification',{'title': 'Thành công','message': 'Xóa thành công','type': 'success',} )
+    emit('message_server_admin', 'delete_user_ok')
+    pass
+
 @socketio.on('delete_people')
 def delete_people(user_id):
     fb.delete_people(user_id)
     emit('toast_notification',{'title': 'Thành công','message': 'Xóa thành công','type': 'success',} )
-    emit('message_server_admin', 'delete_ok')
+    emit('message_server_admin', 'delete_people_ok')
     train_all()
     pass
 @socketio.on('delete_cache_images')
@@ -314,6 +344,7 @@ def delete_cache_images():
 
 @socketio.on('train_all')
 def train_all():
+    global  face_recognition
     features = []
     face_ids =  []
     docs = fb.db.collection("people").stream()
@@ -332,9 +363,10 @@ def train_all():
     labels = [trans_id_to_label[i] for i in face_ids]
     result = face_recognition.update_model(features, labels, id_label)
     print("Done train all!!")
+    face_recognition = FaceRecognition()
+    face_recognition.load_model()
     socketio.emit('toast_notification', {'title': 'Thông báo',
                                         'message': 'Model đã được cập nhật','type': 'info',}, room='all_clients')
-
     return result
 
 @socketio.on('check_pincode')
@@ -345,6 +377,15 @@ def check_pincode(pincode):
         conn.send_turn_on()
     else:
         emit('toast_notification', {'title': 'Cảnh báo', 'message': 'Mã pin chưa chính xác', 'type': 'error', })
+    status = "Đúng mã pin" if pincode == pin else "Sai mã pin"
+    log_entry = {
+        "timestamp": datetime.utcnow() + timedelta(hours=7),
+        "user_id": 'NaN',
+        "name": 'NaN',
+        "status": status,
+        "image_url": "NaN"
+    }
+    fb.add_log(log_entry=log_entry)
     pass
 
 @socketio.on('request_lock_status')
@@ -359,7 +400,9 @@ def request_lock_status():
     socketio.emit('lock_status', {'data': mqtt_data}, room='all_clients')
 
 # other
+state = None
 def background_thread():
+    global  state
     while True:
         try:
             if conn.get_msg == 0:
@@ -367,6 +410,21 @@ def background_thread():
             conn.get_msg = 0
             mqtt_msg = conn.msg
             mqtt_data = mqtt_msg.get('payload')
+            if state is None:
+                state = mqtt_data
+            else:
+                if state != mqtt_data:
+                    status = "Cửa mở" if mqtt_data==1 else "Cửa đóng"
+                    log_entry = {
+                        "timestamp": datetime.utcnow() + timedelta(hours=7),
+                        "user_id": 'NaN',
+                        "name": 'NaN',
+                        "status": status,
+                        "image_url": "NaN"
+                    }
+                    fb.add_log(log_entry)
+                    print("Send log")
+                state = mqtt_data
             socketio.emit('lock_status', {'data': mqtt_data}, room='all_clients')
         finally:
             socketio.sleep(1)  # Emit every second
@@ -378,17 +436,21 @@ if __name__ == '__main__':
     username = "adminiot"
     password = "Adminiot123"
 
-    # broker_address = "mqtt-dashboard.com"
-    # port = 1883
-    # username = "b20dcat170"
-    # password = "Thanhtung170"
+    broker_address = "mqtt-dashboard.com"
+    port = 1883
+    username = "b20dcat170"
+    password = "Thanhtung170"
+
     #
     fb = MyFirebase()
     conn = MQTTConnector(broker_address, port, username, password)
     topic = "ESP32/MC38"
     conn.client.subscribe(topic, qos=0)
-    if face_recognition.load_model() == 0:
-        train_all()
+    try:
+        if face_recognition.load_model() == 0:
+            train_all()
+    except Exception as e:
+        print(e)
 
     socketio.start_background_task(target=conn.client.loop_forever)
     socketio.start_background_task(target=background_thread)

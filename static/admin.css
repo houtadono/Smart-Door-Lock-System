@@ -190,3 +190,18 @@ tbody tr:nth-of-type(even) {
     width: 4rem;
     height: 4rem;
 }
+
+.open-status {
+    background-color: #aaffaa !important;
+}
+.success-status {
+    background-color: #a0e57c !important; /* Màu xanh lá cây */
+}
+.failure-status {
+    background-color: #ffb6b6 !important; /* Màu đỏ nhạt */
+}
+
+/* CSS cho hàng có trạng thái "cửa đóng" */
+.closed-status {
+    background-color: #e6e6e6 !important; /* Màu xám nhạt */
+}
