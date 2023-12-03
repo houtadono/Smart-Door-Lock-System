@@ -61,16 +61,19 @@ class FaceMeshDetector:
         """
         self.imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.faceMesh.process(self.imgRGB)
+        bbox_face = None
+        d = None
         if self.results.multi_face_landmarks:
             faceLms = self.results.multi_face_landmarks[0]
             if draw:
                 self.mpDraw.draw_landmarks(img, faceLms, self.mpFaceMesh.FACEMESH_CONTOURS,
                                            self.drawSpec, self.drawSpec)
             face = []
+            ih, iw, ic = img.shape
             for id, lm in enumerate(faceLms.landmark):
-                ih, iw, ic = img.shape
                 x, y = int(lm.x * iw), int(lm.y * ih)
                 face.append([x, y])
+
             x_min, y_min = min(face, key=lambda x: x[0])[0], min(face, key=lambda x: x[1])[1]
             x_max, y_max = max(face, key=lambda x: x[0])[0], max(face, key=lambda x: x[1])[1]
             bbox_face = (x_min, y_min, x_max - x_min, y_max - y_min)

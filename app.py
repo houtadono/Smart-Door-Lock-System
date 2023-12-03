@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_principal import Principal, RoleNeed, identity_changed, Identity, Permission, UserNeed, identity_loaded
 from datetime import timedelta, datetime
-
+from face_mesh_module import FaceMeshDetector
 from face_detection import FaceDetection
 from face_recognition import FaceRecognition
 from mqtt_connector import MQTTConnector
@@ -35,6 +35,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 socketio = SocketIO(app, cors_allowed_origins="*")
 principal = Principal(app)
 
+face_mesh = FaceMeshDetector(staticMode=False, maxFaces=1, minDetectionCon=0.5)
 face_detection = FaceDetection()
 face_recognition = FaceRecognition()
 list_img = []
@@ -74,7 +75,6 @@ def adminGetPeople():
 @admin_permission.require(http_exception=403)
 def adminGetLog():
     lst_log = fb.get_log()
-    print(lst_log)
     return jsonify({'logs': lst_log})
 
 
@@ -177,18 +177,18 @@ def start_video_frame():
     pass
 @socketio.on('cant_video_frame')
 def cant_video_frame():
-    if len(session['images_no_auth']):
-        emit('toast_notification',
-             {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
-        log_entry = {
-            "timestamp": datetime.utcnow() + timedelta(hours=7),
-            "user_id": 'NaN',
-            "name": 'NaN',
-            "status": "Nhận diện không thành công",
-            "image_url": fb.upload_image_to_log(random.choice(session['images_no_auth']))
-        }
-        fb.add_log(log_entry=log_entry)
-        pass
+
+    # emit('toast_notification',
+    #      {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
+    log_entry = {
+        "timestamp": datetime.utcnow() + timedelta(hours=7),
+        "user_id": 'NaN',
+        "name": 'NaN',
+        "status": "Nhận diện không thành công",
+        "image_url": fb.upload_image_to_log(random.choice(session['images_no_auth'])) if len(session['images_no_auth']) else None
+    }
+    fb.add_log(log_entry=log_entry)
+    session['images_no_auth'] = []
     pass
 @socketio.on('video_frame')
 def video_frame(frame_data):
@@ -206,65 +206,124 @@ def video_frame(frame_data):
         frame_np = None
         # frame = cv2.resize(frame, (640, 480))
         frame = cv2.flip(frame, 1)
-        frame, faces = face_detection.findFaces(frame, False)
-        if faces:
-            for face in faces:
-                faces_sorted = sorted(faces, key=lambda x: x['bbox'][3], reverse=True)
+        frame, bbox_faces, distance = face_mesh.findFaceEye(frame, draw=False)
+        distance = round(distance, 2)
+        if bbox_faces is not None:
+            x, y, w, h = bbox_faces
+            face_frame = frame[y:y + h, x:x + w]
+            if 32 < distance < 43:
+                gray = cv2.cvtColor(face_frame, cv2.COLOR_BGR2GRAY)
+                equalized_img = cv2.equalizeHist(gray)
+                id, conf = face_recognition.recognizer.predict(equalized_img)
+                id_label = face_recognition.id_label.tolist()[int(id)]  # id 0 -> n to id_label: id_user firebase
+                if lst_people is None:
+                    lst_people = fb.get_people()
+                    print(lst_people)
+                name = None
+                print("id_label:", id_label)
+                for person in lst_people:
+                    if person['user_id'] == id_label:
+                        name = person['name']
+                        print("name", name)
+                        break
+                if conf < 30:
+                    emit('toast_notification',
+                         {'title': 'Thành công', 'message': 'Xác thực thành công', 'type': 'success', })
+                    conn.send_turn_on()
+                    emit('video_frame', 'done', broadcast=False)
 
-                largest_face_bbox = faces_sorted[0]['bbox']
-                x, y, w, h = largest_face_bbox
-                if h > 0.7 * frame.shape[0]:
-                    largest_face_frame = frame[y:y + h, x:x + w]
-                    gray = cv2.cvtColor(largest_face_frame, cv2.COLOR_BGR2GRAY)
-
-                    equalized_img = cv2.equalizeHist(gray)
-                    id, conf = face_recognition.recognizer.predict(equalized_img)
-                    id_label = face_recognition.id_label.tolist()[int(id)] # id 0 -> n to id_label: id_user firebase
-                    if lst_people is None:
-                        lst_people = fb.get_people()
-                        print(lst_people)
-                    # name = None
-                    print("id_label:", id_label)
-                    for person in lst_people:
-                        if person['user_id'] == id_label:
-                            name = person['name']
-                            print("name",name)
-                            break
-
-                    if conf < 120:
-                        cv2.putText(frame, f"{name} {conf}", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    if conf < 30:
-                        emit('toast_notification',
-                             {'title': 'Thành công', 'message': 'Xác thực thành công', 'type': 'success', })
-                        conn.send_turn_on()
-                        emit('video_frame', 'done', broadcast=False)
-
-                        log_entry = {
-                            "timestamp": datetime.utcnow() +  timedelta(hours=7),
-                            "user_id": id_label,
-                            "name": name,
-                            "status": "Nhận diện thành công",
-                            "image_url": fb.upload_image_to_log(frame[y:y+h, x:x+h])
-                        }
-                        fb.add_log(log_entry=log_entry)
-                        pass
-                    else:
-                        session['images_no_auth'].append(frame[y:y + h, x:x + h])
-                        # emit('toast_notification',
-                        #      {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
-                        # log_entry = {
-                        #     "timestamp": datetime.utcnow() + timedelta(hours=7),
-                        #     "user_id": 'NaN',
-                        #     "name": 'NaN',
-                        #     "status": "Nhận diện không thành công",
-                        #     "image_url": fb.upload_image_to_log(frame[y:y + h, x:x + h])
-                        # }
-                        # fb.add_log(log_entry=log_entry)
+                    log_entry = {
+                        "timestamp": datetime.utcnow() + timedelta(hours=7),
+                        "user_id": id_label,
+                        "name": name,
+                        "status": "Nhận diện thành công",
+                        "image_url": fb.upload_image_to_log(frame[y:y + h, x:x + h])
+                    }
+                    fb.add_log(log_entry=log_entry)
+                    session['images_no_auth'] = []
+                    pass
                 else:
-                    cv2.putText(frame, "Too far", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                (255, 0, 255), 2)
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    session['images_no_auth'].append(frame[y:y + h, x:x + h])
+                    # emit('toast_notification',
+                    #      {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
+                    # log_entry = {
+                    #     "timestamp": datetime.utcnow() + timedelta(hours=7),
+                    #     "user_id": 'NaN',
+                    #     "name": 'NaN',
+                    #     "status": "Nhận diện không thành công",
+                    #     "image_url": fb.upload_image_to_log(frame[y:y + h, x:x + h])
+                    # }
+                    # fb.add_log(log_entry=log_entry)
+                cv2.putText(frame, f"{name} {conf}", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            else:
+                session['images_no_auth'].append(frame[y:y + h, x:x + h])
+                txt = "Too far" if distance >= 43 else "Too close"
+                cv2.putText(frame, txt, (x++w//4, y+h//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(frame, f"Distance: {distance}", (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+
+
+
+        # frame, faces = face_detection.findFaces(frame, False)
+        # if faces:
+        #     for face in faces:
+        #         faces_sorted = sorted(faces, key=lambda x: x['bbox'][3], reverse=True)
+        #
+        #         largest_face_bbox = faces_sorted[0]['bbox']
+        #         x, y, w, h = largest_face_bbox
+        #         if h > 0.7 * frame.shape[0]:
+        #             largest_face_frame = frame[y:y + h, x:x + w]
+        #             gray = cv2.cvtColor(largest_face_frame, cv2.COLOR_BGR2GRAY)
+        #
+        #             equalized_img = cv2.equalizeHist(gray)
+        #             id, conf = face_recognition.recognizer.predict(equalized_img)
+        #             id_label = face_recognition.id_label.tolist()[int(id)] # id 0 -> n to id_label: id_user firebase
+        #             if lst_people is None:
+        #                 lst_people = fb.get_people()
+        #                 print(lst_people)
+        #             # name = None
+        #             print("id_label:", id_label)
+        #             for person in lst_people:
+        #                 if person['user_id'] == id_label:
+        #                     name = person['name']
+        #                     print("name",name)
+        #                     break
+        #
+        #             if conf < 120:
+        #                 cv2.putText(frame, f"{name} {conf}", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        #                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        #             if conf < 30:
+        #                 emit('toast_notification',
+        #                      {'title': 'Thành công', 'message': 'Xác thực thành công', 'type': 'success', })
+        #                 conn.send_turn_on()
+        #                 emit('video_frame', 'done', broadcast=False)
+        #
+        #                 log_entry = {
+        #                     "timestamp": datetime.utcnow() +  timedelta(hours=7),
+        #                     "user_id": id_label,
+        #                     "name": name,
+        #                     "status": "Nhận diện thành công",
+        #                     "image_url": fb.upload_image_to_log(frame[y:y+h, x:x+h])
+        #                 }
+        #                 fb.add_log(log_entry=log_entry)
+        #                 pass
+        #             else:
+        #                 session['images_no_auth'].append(frame[y:y + h, x:x + h])
+        #                 # emit('toast_notification',
+        #                 #      {'title': 'Cảnh báo', 'message': 'Xác thực không thành công', 'type': 'warning', })
+        #                 # log_entry = {
+        #                 #     "timestamp": datetime.utcnow() + timedelta(hours=7),
+        #                 #     "user_id": 'NaN',
+        #                 #     "name": 'NaN',
+        #                 #     "status": "Nhận diện không thành công",
+        #                 #     "image_url": fb.upload_image_to_log(frame[y:y + h, x:x + h])
+        #                 # }
+        #                 # fb.add_log(log_entry=log_entry)
+        #         else:
+        #             cv2.putText(frame, "Too far", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1,
+        #                         (255, 0, 255), 2)
+        #             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
         _, processed_frame_data = cv2.imencode('.jpg', frame)
         frame = None
@@ -296,22 +355,39 @@ def video_frame_add(frame_data):
         frame = cv2.imdecode(frame_np, cv2.IMREAD_COLOR)
         # frame = cv2.resize(frame, (640, 480))
         frame = cv2.flip(frame, 1)
-        frame, faces = face_detection.findFaces(frame, False)
-        if faces:
-            faces_sorted = sorted(faces, key=lambda x: x['bbox'][3], reverse=True)
-
-            largest_face_bbox = faces_sorted[0]['bbox']
-            x, y, w, h = largest_face_bbox
-            if h > 0.7 * frame.shape[0]:
-                largest_face_frame = frame[y:y + h, x:x + w]
-                gray = cv2.cvtColor(largest_face_frame, cv2.COLOR_BGR2GRAY)
+        frame, bbox_faces, distance = face_mesh.findFaceEye(frame, draw=False)
+        distance = round(distance, 2)
+        if bbox_faces is not None:
+            x, y, w, h = bbox_faces
+            face_frame = frame[y:y + h, x:x + w]
+            if 32 < distance < 43:
+                gray = cv2.cvtColor(face_frame, cv2.COLOR_BGR2GRAY)
                 equalized_img = cv2.equalizeHist(gray)
-                session['images'].append(largest_face_frame)
-                list_img.append(largest_face_frame)
+                session['images'].append(face_frame)
+                list_img.append(face_frame)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             else:
-                cv2.putText(frame, "Too far", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+                txt = "Too far" if distance >= 43 else "Too close"
+                cv2.putText(frame, txt, (x+w//4, y+h//2), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(frame, f"Distance: {distance}", (20,20), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+
+        # frame, faces = face_detection.findFaces(frame, False)
+        # if faces:
+        #     faces_sorted = sorted(faces, key=lambda x: x['bbox'][3], reverse=True)
+        #
+        #     largest_face_bbox = faces_sorted[0]['bbox']
+        #     x, y, w, h = largest_face_bbox
+        #     if h > 0.7 * frame.shape[0]:
+        #         largest_face_frame = frame[y:y + h, x:x + w]
+        #         gray = cv2.cvtColor(largest_face_frame, cv2.COLOR_BGR2GRAY)
+        #         equalized_img = cv2.equalizeHist(gray)
+        #         session['images'].append(largest_face_frame)
+        #         list_img.append(largest_face_frame)
+        #         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        #     else:
+        #         cv2.putText(frame, "Too far", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 255), 2)
+        #         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
         _, processed_frame_data = cv2.imencode('.jpg', frame)
         frame = None
         processed_frame_base64 = base64.b64encode(processed_frame_data).decode()
